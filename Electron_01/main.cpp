@@ -7,15 +7,15 @@
 using namespace std;
 
 /// Constants
-const int LUNGIME_ECRAN = 1600;
+const int LATIME_ECRAN = 1600;
 const int INALTIME_ECRAN = 800;
 
     ///Item barul este aflat langa marginea de sus a ecranului y=0
 const int INALTIMEA_BAREI_DE_ITEME = 50;   /// inaltimea Item BAR
-const int NR_ITEME = 12; /// Nr de piese/iteme diferite
     ///Barul de tooluri este situat langa marginea stanga a ecranului (x=0) si sub barul de iteme
-const int LUNGIMEA_BAREI_DE_TOOLS = 150;
+const int LATIME_TOOLBAR = 150;
 const int NR_TOOLS=7;
+const int NR_ITEME=13;
 
 const int MAX_PIESE = 100;  /// Nr maxim de piese pe care le putem desena
 
@@ -24,7 +24,6 @@ const char Item_Labels[NR_ITEME][15]={"Shape 1"};
 
 
 //fisierele si structura aferenta figurilor
-const int nr_figuri=13;
 const char fisiere[20][15]={"AMPLOP.PS","BATERIE.PS","CONDENS.PS","DIODA.PS","NOD.PS","POLARIZ.PS","REZIST.PS","SERVOMOT.PS","SINU.PS","STOP.PS","TRANZNPN.PS","TRANZPNP.PS","ZENNER.PS"};
 struct figura{
     char nume[50];
@@ -34,6 +33,7 @@ struct figura{
     int nr_bucati;
     double bucati[20][4];
     char tip_bucata[20];
+    int marire;
 }figuri[50];
 
 void citire_figura(int index)
@@ -57,49 +57,29 @@ void citire_figura(int index)
 }
 void citire_figuri()
 {
-    for (int i=0; i<nr_figuri; ++i)
+    for (int i=0; i<NR_ITEME; ++i)
+    {
         citire_figura(i);
+        figuri[i].marire=20;
+    }
+    figuri[0].marire=7;
+    figuri[7].marire=figuri[8].marire=10;
+    figuri[4].marire=40;
 }
 
 
 
-
-/// Un struct pentru piese
-struct Shape {
-    int x, y, width, height, color;
-};
 
 /// Memoreaza toate piesele aflate pe ecran
-Shape piese[MAX_PIESE];
-int NrPiese = 0; /// Nr de piese aflate pe ecran
-
-/// Verificarea suprapunerii
-bool SeSuprapun(const Shape& p1, const Shape& p2)
-{
-    return !(p1.x + p1.width < p2.x || p1.x > p2.x + p2.width || p1.y + p1.height < p2.y || p1.y > p2.y + p2.height);
-}
-
-/// Verifica daca se poate desena fara suprapunere
-bool SePoateDesena(int x, int y, int width, int height)
-{
-    /// verifica mai intai suprapunerea cu meniul de iteme
-    if (y - height / 2 <= INALTIMEA_BAREI_DE_ITEME)
-        return false;
-    if( x-width/2 <=LUNGIMEA_BAREI_DE_TOOLS)
-        return false;
-    /// verifica apoi daca se suprapune cu alte figuri utilizand o alta functie
-    Shape newPiesa = {x - width / 2, y - height / 2, width, height};
-    for (int i = 0; i < NrPiese; ++i)
-        if (SeSuprapun(newPiesa, piese[i]))
-            return false;
-
-    return true;
-}
+struct piesa{
+    int x1,y1,x2,y2;//colt stanga sus si colt dreapta jos
+} piese[MAX_PIESE];
+int nrPiese = -1; /// Nr de piese aflate pe ecran
 
 /// Deseneaza Bara de Iteme/Piese
 void DeseneazaBaraDeIteme()
 {
-    int Lungimea_Barei_Iteme = LUNGIME_ECRAN / NR_ITEME;
+    int Lungimea_Barei_Iteme = LATIME_ECRAN / NR_ITEME;
 
     for (int i = 0; i < NR_ITEME; ++i)
     {
@@ -115,9 +95,7 @@ void DeseneazaBaraDeIteme()
     settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
     setcolor(BLACK);
     for (int i = 0; i < NR_ITEME; ++i) {
-        char label[10];
-        sprintf(label, "Piesa %d", i + 1);
-        outtextxy(i * (LUNGIME_ECRAN / NR_ITEME) + 10, 15, label);
+        outtextxy(i * (LATIME_ECRAN / NR_ITEME) + 10, 15, figuri[i].nume);
     }
 }
 /// Deseneaza Bara de Tooluri
@@ -127,10 +105,10 @@ void DeseneazaBaraDeTools()
     for ( int i=0; i< NR_TOOLS; ++i)
     {
         setfillstyle(SOLID_FILL, DARKGRAY);
-        bar(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LUNGIMEA_BAREI_DE_TOOLS,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
+        bar(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
 
         setcolor(WHITE);
-        rectangle(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LUNGIMEA_BAREI_DE_TOOLS,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
+        rectangle(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
 
         /// Numirea Toolurilor
         //Tool_Labels[NR_TOOLS];
@@ -141,7 +119,7 @@ void DeseneazaBaraDeTools()
         strcpy(label, Tool_Labels[i]);
         /*int textWidth = textwidth(label);
         int textHeight = textheight(label);
-        int textX = (LUNGIMEA_BAREI_DE_TOOLS - textWidth) / 2; // Center horizontally
+        int textX = (LATIME_TOOLBAR - textWidth) / 2; // Center horizontally
         int textY = INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime + (TOOLS_Inaltime - textHeight) / 2;*/
         outtextxy(20, 10+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, label);
     }
@@ -150,67 +128,108 @@ void DeseneazaBaraDeTools()
     //for(int i=0; i < )
 
 }
-/*
-/// Functie care deseneaza piesa selectata
-void DeseneazaPiesa(int Item_Index, int x, int y)
+bool estePeTabla (int x, int y)
 {
-    int width, height, color;
-    switch (Item_Index)
+    return y>INALTIMEA_BAREI_DE_ITEME && y<=INALTIME_ECRAN && x>LATIME_TOOLBAR && x<= LATIME_ECRAN;
+}
+bool seIntersecteaza (piesa a, piesa b)
+{
+    return a.x2>=b.x1 && b.x2>=a.x1 && a.y2>=b.y1 && b.y2>=a.y1;
+}
+bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
+{
+    for (int i=0; i<=nrPiese; ++i)
     {
-        case 0: { // Dreptunghi Rosu
-            width = 60; height = 30; color = RED;
-            break;
+        //verificam daca se intersecteaza cu alte piese
+        if (seIntersecteaza(piesaNoua,piese[i]))
+        {
+            cout<<"Se suprapune cu piesa ("<<i<<")\n";
+            return false;
         }
-        case 1: { // Dreptunghi Verde
-            width = 80; height = 40; color = GREEN;
-            break;
-        }
-        case 2: { // Dreptunghi Albastru
-            width = 50; height = 50; color = BLUE;
-            break;
-        }
-
-        /// mai multe cazuri?
-
-        default:
-            cout << "N-a fost definita o pisea pentru acest Item " << Item_Index << endl;
-            return;
     }
 
-    if (SePoateDesena(x, y, width, height)) {
-        setcolor(color);
-        setfillstyle(SOLID_FILL, color);
-        bar(x - width / 2, y - height / 2, x + width / 2, y + height / 2);
-
-        piese[NrPiese++] = {x - width / 2, y - height / 2, width, height, color};
-    } else {
-        cout << "Nu se poate desena caci se suprapun" << endl;
+    for (int i=0; i<figuri[index].nr_bucati; ++i)
+    {
+        char type=figuri[index].tip_bucata[i];
+        int a=figuri[index].marire*figuri[index].bucati[i][0];
+        int b=figuri[index].marire*figuri[index].bucati[i][1];
+        int c=figuri[index].marire*figuri[index].bucati[i][2];
+        int d=figuri[index].marire*figuri[index].bucati[i][3];
+        if (type=='L' || type=='R')
+        {
+            if (!(estePeTabla(x+a,y+b) && estePeTabla(x+c,y+d)))
+                return false;
+        }
+        else if (type=='O')
+        {
+            if (!(estePeTabla(x+a-c,y+b-d) && estePeTabla(x+a+c,y+b-d) && estePeTabla(x+a-c,y+b-d) && estePeTabla(x+a+c,y+b+d)))
+                return false;
+        }
     }
-}*/
+    return true;
+}
 void desenare_piesa (int x, int y, int index)
 {
-    int marire=20;
-    for (int i=0; i<figuri[index].nr_bucati; ++i){
+    ++nrPiese;
+    piese[nrPiese].x1=piese[nrPiese].y1=9999;//initializam pt minim
+    for (int i=0; i<figuri[index].nr_bucati; ++i)
+    {
         char type=figuri[index].tip_bucata[i];
-        int a=marire*figuri[index].bucati[i][0];
-        int b=marire*figuri[index].bucati[i][1];
-        int c=marire*figuri[index].bucati[i][2];
-        int d=marire*figuri[index].bucati[i][3];
-        if (type=='L') line(x+a,y+b,x+c,y+d);
-        else if (type=='O') ellipse(x+a,y+b,0,360,c,d);
-        else if (type=='R') rectangle(x+a,y+b,x+c,y+d);
+        int a=figuri[index].marire*figuri[index].bucati[i][0];
+        int b=figuri[index].marire*figuri[index].bucati[i][1];
+        int c=figuri[index].marire*figuri[index].bucati[i][2];
+        int d=figuri[index].marire*figuri[index].bucati[i][3];
+        if (type=='L') {
+            line(x+a,y+b,x+c,y+d);
+        }
+        else if (type=='O') {
+            ellipse(x+a,y+b,0,360,c,d);
+        }
+        else if (type=='R') {
+            rectangle(x+a,y+b,x+c,y+d);
+        }
+    }
+}
+void incadrare (piesa& piesaNoua, int x, int y, int index)
+{
+    piesaNoua.x1=piesaNoua.y1=9999;
+    piesaNoua.x2=piesaNoua.y2=0;
+    for (int i=0; i<figuri[index].nr_bucati; ++i)
+    {
+        char type=figuri[index].tip_bucata[i];
+        int a=figuri[index].marire*figuri[index].bucati[i][0];
+        int b=figuri[index].marire*figuri[index].bucati[i][1];
+        int c=figuri[index].marire*figuri[index].bucati[i][2];
+        int d=figuri[index].marire*figuri[index].bucati[i][3];
+        if (type=='L') {
+            piesaNoua.x1=min(piesaNoua.x1,x+a);
+            piesaNoua.y1=min(piesaNoua.y1,y+b);
+            piesaNoua.x2=max(piesaNoua.x2,x+c);
+            piesaNoua.y2=max(piesaNoua.y2,y+d);
+        }
+        else if (type=='O') {
+            piesaNoua.x1=min(piesaNoua.x1,x+a-c);
+            piesaNoua.y1=min(piesaNoua.y1,y+b-d);
+            piesaNoua.x2=max(piesaNoua.x2,x+a+c);
+            piesaNoua.y2=max(piesaNoua.y2,y+b+d);
+        }
+        else if (type=='R') {
+            piesaNoua.x1=min(piesaNoua.x1,x+a);
+            piesaNoua.y1=min(piesaNoua.y1,y+b);
+            piesaNoua.x2=max(piesaNoua.x2,x+c);
+            piesaNoua.y2=max(piesaNoua.y2,y+d);
+        }
     }
 }
 /// Functie care detecta ce Item a fost apasat
 int getItemIndex(int x, int y) {
     if (y > INALTIMEA_BAREI_DE_ITEME) return -1;
-    return x / (LUNGIME_ECRAN / NR_ITEME);
+    return x / (LATIME_ECRAN / NR_ITEME);
 }
 
 int main() {
     citire_figuri();
-    initwindow(LUNGIME_ECRAN, INALTIME_ECRAN, "Electron");
-    desenare_piesa(500,500,3);
+    initwindow(LATIME_ECRAN, INALTIME_ECRAN, "Electron");
     ///drawing the Toolbar and ItemMenu
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
@@ -236,7 +255,14 @@ int main() {
             else if (Item_Selectat != -1)
             {
                 /// Click inafara item barului
-                //DeseneazaPiesa(Item_Selectat, x, y);
+                setcolor(COLOR(255,255,51));
+                piesa piesaNoua;
+                incadrare(piesaNoua,x,y,Item_Selectat);
+                if (sePoateDesena(piesaNoua,x,y,Item_Selectat))
+                {
+                    desenare_piesa(x, y, Item_Selectat);
+                    piese[++nrPiese]=piesaNoua;
+                }
             }
         }
 
