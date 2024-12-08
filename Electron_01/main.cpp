@@ -22,6 +22,48 @@ const int MAX_PIESE = 100;  /// Nr maxim de piese pe care le putem desena
 const char Tool_Labels[NR_TOOLS][20]={"Clear Mouse", "Rotate" ,"Move","Erase Shape", "Make Connection", "Erase All", "Erase Connection"};
 const char Item_Labels[NR_ITEME][15]={"Shape 1"};
 
+
+//fisierele si structura aferenta figurilor
+const int nr_figuri=13;
+const char fisiere[20][15]={"AMPLOP.PS","BATERIE.PS","CONDENS.PS","DIODA.PS","NOD.PS","POLARIZ.PS","REZIST.PS","SERVOMOT.PS","SINU.PS","STOP.PS","TRANZNPN.PS","TRANZPNP.PS","ZENNER.PS"};
+struct figura{
+    char nume[50];
+    int nr_intrari;
+    double intrari[5][2];
+    char descriere[100];
+    int nr_bucati;
+    double bucati[20][4];
+    char tip_bucata[20];
+}figuri[50];
+
+void citire_figura(int index)
+{
+    ifstream fin(fisiere[index]);
+    fin.getline(figuri[index].nume,50);
+    fin>>figuri[index].nr_intrari;
+    for (int i=0; i<figuri[index].nr_intrari; ++i)
+    {
+        fin>>figuri[index].intrari[i][0]>>figuri[index].intrari[i][1];
+    }
+    fin.get();
+    fin.getline(figuri[index].descriere,100);
+    fin>>figuri[index].nr_bucati;
+    for (int i=0; i<figuri[index].nr_bucati; ++i)
+    {
+        fin>>figuri[index].tip_bucata[i];
+        for(int j=0; j<4; ++j)
+            fin>>figuri[index].bucati[i][j];
+    }
+}
+void citire_figuri()
+{
+    for (int i=0; i<nr_figuri; ++i)
+        citire_figura(i);
+}
+
+
+
+
 /// Un struct pentru piese
 struct Shape {
     int x, y, width, height, color;
@@ -108,7 +150,7 @@ void DeseneazaBaraDeTools()
     //for(int i=0; i < )
 
 }
-
+/*
 /// Functie care deseneaza piesa selectata
 void DeseneazaPiesa(int Item_Index, int x, int y)
 {
@@ -144,8 +186,21 @@ void DeseneazaPiesa(int Item_Index, int x, int y)
     } else {
         cout << "Nu se poate desena caci se suprapun" << endl;
     }
+}*/
+void desenare_piesa (int x, int y, int index)
+{
+    int marire=20;
+    for (int i=0; i<figuri[index].nr_bucati; ++i){
+        char type=figuri[index].tip_bucata[i];
+        int a=marire*figuri[index].bucati[i][0];
+        int b=marire*figuri[index].bucati[i][1];
+        int c=marire*figuri[index].bucati[i][2];
+        int d=marire*figuri[index].bucati[i][3];
+        if (type=='L') line(x+a,y+b,x+c,y+d);
+        else if (type=='O') ellipse(x+a,y+b,0,360,c,d);
+        else if (type=='R') rectangle(x+a,y+b,x+c,y+d);
+    }
 }
-
 /// Functie care detecta ce Item a fost apasat
 int getItemIndex(int x, int y) {
     if (y > INALTIMEA_BAREI_DE_ITEME) return -1;
@@ -153,9 +208,9 @@ int getItemIndex(int x, int y) {
 }
 
 int main() {
-
+    citire_figuri();
     initwindow(LUNGIME_ECRAN, INALTIME_ECRAN, "Electron");
-
+    desenare_piesa(500,500,3);
     ///drawing the Toolbar and ItemMenu
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
@@ -181,7 +236,7 @@ int main() {
             else if (Item_Selectat != -1)
             {
                 /// Click inafara item barului
-                DeseneazaPiesa(Item_Selectat, x, y);
+                //DeseneazaPiesa(Item_Selectat, x, y);
             }
         }
 
