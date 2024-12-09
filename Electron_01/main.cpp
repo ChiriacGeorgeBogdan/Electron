@@ -233,11 +233,30 @@ int getItemIndex(int x, int y) {
 
 void redraw()
 {
-    setbkcolor(BLACK);
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
     for (int i=0; i<=nrPiese; ++i)
         desenare_piesa(piese[i].x,piese[i].y,piese[i].index);
+}
+void animareChenar (int state)
+{
+    setbkcolor(BLACK);
+    setcolor(WHITE);
+    int gap=5;
+    for (int i=0; i<=nrPiese; ++i)
+    {
+        for (int x=piese[i].x1-gap+5*state; x<= piese[i].x2; x+=10)
+            line(x,piese[i].y1-gap,x+5,piese[i].y1-gap);
+        state=1-state;
+        for (int x=piese[i].x1-gap+5*state; x<= piese[i].x2; x+=10)
+            line(x,piese[i].y2+gap,x+5,piese[i].y2+gap);
+        state=1-state;
+        for (int y=piese[i].y1-gap+5*state; y<= piese[i].y2; y+=10)
+            line(piese[i].x2+gap,y,piese[i].x2+gap,y+5);
+        state=1-state;
+        for (int y=piese[i].y1-gap+5*state; y<= piese[i].y2; y+=10)
+            line(piese[i].x1-gap,y,piese[i].x1-gap,y+5);
+    }
 }
 int main() {
     citire_figuri();
@@ -258,6 +277,18 @@ int main() {
             int y = mousey();
             clearmouseclick(WM_LBUTTONDOWN);
 
+            if (x<=LATIME_TOOLBAR && y>INALTIMEA_BAREI_DE_ITEME)
+            {
+                int state=0;
+                while (!ismouseclick(WM_LBUTTONDOWN))
+                {
+                    animareChenar(state);
+                    delay(500);
+                    state=1-state;
+                    cleardevice();
+                    redraw();
+                }
+            }
             if (y <= INALTIMEA_BAREI_DE_ITEME)
             {
                 /// Click in intem bar
@@ -274,6 +305,7 @@ int main() {
                     desenare_piesa(x, y, Item_Selectat);
                     piese[++nrPiese]=piesaNoua;
                 }
+                Item_Selectat=-1;
             }
         }
 
