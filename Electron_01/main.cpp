@@ -73,6 +73,7 @@ void citire_figuri()
 /// Memoreaza toate piesele aflate pe ecran
 struct piesa{
     int x1,y1,x2,y2;//colt stanga sus si colt dreapta jos
+    int x,y,index;
 } piese[MAX_PIESE];
 int nrPiese = -1; /// Nr de piese aflate pe ecran
 
@@ -170,8 +171,7 @@ bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
 }
 void desenare_piesa (int x, int y, int index)
 {
-    ++nrPiese;
-    piese[nrPiese].x1=piese[nrPiese].y1=9999;//initializam pt minim
+    setcolor(COLOR(255,255,51));
     for (int i=0; i<figuri[index].nr_bucati; ++i)
     {
         char type=figuri[index].tip_bucata[i];
@@ -220,6 +220,9 @@ void incadrare (piesa& piesaNoua, int x, int y, int index)
             piesaNoua.y2=max(piesaNoua.y2,y+d);
         }
     }
+    piesaNoua.x=x;
+    piesaNoua.y=y;
+    piesaNoua.index=index;
 }
 /// Functie care detecta ce Item a fost apasat
 int getItemIndex(int x, int y) {
@@ -227,6 +230,15 @@ int getItemIndex(int x, int y) {
     return x / (LATIME_ECRAN / NR_ITEME);
 }
 
+
+void redraw()
+{
+    setbkcolor(BLACK);
+    DeseneazaBaraDeIteme();
+    DeseneazaBaraDeTools();
+    for (int i=0; i<=nrPiese; ++i)
+        desenare_piesa(piese[i].x,piese[i].y,piese[i].index);
+}
 int main() {
     citire_figuri();
     initwindow(LATIME_ECRAN, INALTIME_ECRAN, "Electron");
@@ -255,7 +267,6 @@ int main() {
             else if (Item_Selectat != -1)
             {
                 /// Click inafara item barului
-                setcolor(COLOR(255,255,51));
                 piesa piesaNoua;
                 incadrare(piesaNoua,x,y,Item_Selectat);
                 if (sePoateDesena(piesaNoua,x,y,Item_Selectat))
