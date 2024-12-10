@@ -171,6 +171,7 @@ bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
 }
 void desenare_piesa (int x, int y, int index)
 {
+    setbkcolor(BLACK);
     setcolor(COLOR(255,255,51));
     for (int i=0; i<figuri[index].nr_bucati; ++i)
     {
@@ -233,6 +234,7 @@ int getItemIndex(int x, int y) {
 
 void redraw()
 {
+    setbkcolor(BLACK);
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
     for (int i=0; i<=nrPiese; ++i)
@@ -258,6 +260,11 @@ void animareChenar (int state)
             line(piese[i].x1-gap,y,piese[i].x1-gap,y+5);
     }
 }
+
+void stergePiesa (int index)
+{
+    piese[index]=piese[nrPiese--];
+}
 int main() {
     citire_figuri();
     initwindow(LATIME_ECRAN, INALTIME_ECRAN, "Electron");
@@ -279,12 +286,26 @@ int main() {
 
             if (x<=LATIME_TOOLBAR && y>INALTIMEA_BAREI_DE_ITEME)
             {
+                int toolSelectat=(y-INALTIMEA_BAREI_DE_ITEME)/((INALTIME_ECRAN-INALTIMEA_BAREI_DE_ITEME)/NR_TOOLS);
                 int state=0;
                 while (!ismouseclick(WM_LBUTTONDOWN))
                 {
                     animareChenar(state);
                     delay(500);
                     state=1-state;
+                    cleardevice();
+                    redraw();
+                }
+                if (toolSelectat==3) //stergere
+                {
+                    x=mousex();
+                    y=mousey();
+                    piesa pseudopiesa;
+                    pseudopiesa.x1=pseudopiesa.x2=x;
+                    pseudopiesa.y1=pseudopiesa.y2=y;
+                    for (int i=0; i<=nrPiese;++i)
+                        if (seIntersecteaza(piese[i],pseudopiesa))
+                            stergePiesa(i);
                     cleardevice();
                     redraw();
                 }
