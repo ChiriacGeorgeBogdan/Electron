@@ -259,10 +259,6 @@ void incadrare (piesa& piesaNoua, int x, int y, int index)
         int d=figuri[index].marire*figuri[index].bucati[i][3];
         if (type=='L')
         {
-            /*piesaNoua.x1=min(piesaNoua.x1,x+a);
-            piesaNoua.y1=min(piesaNoua.y1,y+b);
-            piesaNoua.x2=max(piesaNoua.x2,x+c);
-            piesaNoua.y2=max(piesaNoua.y2,y+d);*/
             piesaNoua.x1 = min(min(piesaNoua.x1, x + a), x + c);
             piesaNoua.y1 = min(min(piesaNoua.y1, y + b), y + d);
             piesaNoua.x2 = max(max(piesaNoua.x2, x + a), x + c);
@@ -329,9 +325,9 @@ void redraw()
     setbkcolor(BLACK);
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
+    desenare_legaturi();
     for (int i=0; i<=nrPiese; ++i)
         desenare_piesa(piese[i].x,piese[i].y,piese[i].index);
-    desenare_legaturi();
 }
 void AnimareChenar (int state)
 {
@@ -497,6 +493,16 @@ void stergere_piesa()
     for (int i=0; i<=nrPiese;++i)
         if (seIntersecteaza(piese[i],pseudopiesa))
         {
+            for (int j=0; j<=nrPiese; ++j)
+                for (int e=0; e<3; ++e)
+                    for (int f=0; f<3; ++f)
+                    {
+                        graf[i][j].intrari[e][f]=graf[nrPiese][j].intrari[e][f];
+                        graf[nrPiese][j].intrari[e][f]=0;
+                        graf[j][i].intrari[e][f]=graf[j][nrPiese].intrari[e][f];
+                        graf[j][nrPiese].intrari[e][f]=0;
+
+                    }
             piese[i]=piese[nrPiese--];
             cout<<"Piesa stearsa este"<<i<<"\n";
             break;
@@ -504,21 +510,21 @@ void stergere_piesa()
     cleardevice();
     redraw();
 }
+void AsteptareSelectie ()
+{
+    int state=0;
+    while (!ismouseclick(WM_LBUTTONDOWN))
+    {
+        AnimareChenar(state);
+        //desenare_intrari();
+        delay(500);
+        state=1-state;
+        cleardevice();
+        redraw();
+    }
+}
 void Tool_Cases(int index)
 {
-    if (index!=0)
-    {
-        int state=0;
-        while (!ismouseclick(WM_LBUTTONDOWN))
-        {
-            AnimareChenar(state);
-            desenare_intrari();
-            delay(500);
-            state=1-state;
-            cleardevice();
-            redraw();
-        }
-    }
     switch (index)
     {
         case 0:
@@ -534,6 +540,7 @@ void Tool_Cases(int index)
             break;
         }
         case 3:
+            AsteptareSelectie();
             stergere_piesa();
             break;
         default:
