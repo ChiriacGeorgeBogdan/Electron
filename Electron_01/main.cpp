@@ -211,6 +211,7 @@ bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
 }
 void desenare_piesa (int x, int y, int index)
 {
+    setbkcolor(BLACK);
     setcolor(COLOR(255,255,51));
     for (int i=0; i<figuri[index].nr_bucati; ++i)
     {
@@ -325,6 +326,7 @@ void desenare_legaturi()
 
 void redraw()
 {
+    setbkcolor(BLACK);
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
     for (int i=0; i<=nrPiese; ++i)
@@ -485,9 +487,38 @@ void trasare_legatura()
         }*/
     }
 }
-
+void stergere_piesa()
+{
+    int x=mousex();
+    int y=mousey();
+    piesa pseudopiesa;
+    pseudopiesa.x1=pseudopiesa.x2=x;
+    pseudopiesa.y1=pseudopiesa.y2=y;
+    for (int i=0; i<=nrPiese;++i)
+        if (seIntersecteaza(piese[i],pseudopiesa))
+        {
+            piese[i]=piese[nrPiese--];
+            cout<<"Piesa stearsa este"<<i<<"\n";
+            break;
+        }
+    cleardevice();
+    redraw();
+}
 void Tool_Cases(int index)
 {
+    if (index!=0)
+    {
+        int state=0;
+        while (!ismouseclick(WM_LBUTTONDOWN))
+        {
+            AnimareChenar(state);
+            desenare_intrari();
+            delay(500);
+            state=1-state;
+            cleardevice();
+            redraw();
+        }
+    }
     switch (index)
     {
         case 0:
@@ -499,18 +530,12 @@ void Tool_Cases(int index)
         }
         case 1:
         {
-            int state=0;
-            while (!ismouseclick(WM_LBUTTONDOWN))
-            {
-                AnimareChenar(state);
-                desenare_intrari();
-                delay(500);
-                state=1-state;
-                cleardevice();
-                redraw();
-            }
+
             break;
         }
+        case 3:
+            stergere_piesa();
+            break;
         default:
             return;
     }
@@ -541,13 +566,10 @@ int main()
             {
                 Tool_Selectat=getToolIndex(x, y);
                 cout << "Numarul Uneltei selectate " << Tool_Selectat << endl;
-            }
-            else if(Tool_Selectat !=-1)
-            {
                 Tool_Cases(Tool_Selectat);
                 Tool_Selectat=-1;
             }
-            if (y <= INALTIMEA_BAREI_DE_ITEME)
+            else if (y <= INALTIMEA_BAREI_DE_ITEME)
             {
                 /// Click in intem bar
                 Item_Selectat = getItemIndex(x, y);
