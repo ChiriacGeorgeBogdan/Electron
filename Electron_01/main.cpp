@@ -314,14 +314,29 @@ void desenare_piesa (piesa P, int CULOARE)
         }
     }
 }
+void myIntrari(int orientare, int index, int i, int &a, int &b)
+{
+    float x1 = figuri[index].intrari[i][0];
+    float y1 = figuri[index].intrari[i][1];
+
+    float x1_nou = x1, y1_nou = y1;
+
+    for (int j = 0; j < orientare; ++j)
+    {
+        roteste(x1_nou, y1_nou, x1_nou, y1_nou);
+    }
+
+    a = figuri[index].marire * x1_nou;
+    b = figuri[index].marire * y1_nou;
+}
 void calcul_intratri(piesa &piesaNoua)
 {
     int index=piesaNoua.index;
-    int a, b;
+    int orientare=piesaNoua.orientare;
     for(int j=0; j<figuri[index].nr_intrari; ++j)
     {
-        a=figuri[index].intrari[j][0]*figuri[index].marire;
-        b=figuri[index].intrari[j][1]*figuri[index].marire;
+        int a=0; int b=0;
+        myIntrari(orientare, index, j, a, b);
         piesaNoua.intrari[j].x=a+piesaNoua.x;
         piesaNoua.intrari[j].y=b+piesaNoua.y;
     }
@@ -475,14 +490,19 @@ void AnimareChenar (int state)
 const int Raza_Intrare=5;
 const int Imprecizie=25;
 
-void desenare_intrari()
+void desenare_intrari(int CULOARE)
 {
-    setcolor(WHITE);
+    setcolor(CULOARE);
     for (int i = 0; i <= nrPiese; ++i)
         for (int j = 0; j < figuri[piese[i].index].nr_intrari; ++j)
             ellipse(piese[i].intrari[j].x, piese[i].intrari[j].y, 0, 360, Raza_Intrare, Raza_Intrare);
 }
 
+void stergere_intrari()
+{
+    desenare_intrari(FUNDAL);
+    redraw();
+}
 
 bool mouse_se_intersecteaza_cu_piesa(int x, int y, piesa a)
 {
@@ -656,7 +676,8 @@ void rotire()
     piese[i].orientare=(piese[i].orientare+1)%4;
     int CULOARE=COLOR(255,255,51);
     incadrare_PiesaModificata(piese[i]);
-    desenare_piesa(piese[i], CULOARE);
+    cleardevice();
+    redraw();
 
 }
 void Tool_Cases(int index)
@@ -665,8 +686,9 @@ void Tool_Cases(int index)
     {
         case 0:
         {
-            desenare_intrari();
+            desenare_intrari(WHITE);
             trasare_legatura();
+            stergere_intrari();
             //redraw();
             break;
         }
