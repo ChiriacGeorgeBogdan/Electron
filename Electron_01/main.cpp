@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <fstream>
 
+#define FUNDAL 0
+
 using namespace std;
 
 /// Constants
@@ -83,8 +85,8 @@ struct piesa
     int x1,y1,x2,y2;//colt stanga sus si colt dreapta jos
     int x,y,index;
     intrare intrari[5];
+    int orientare; /// 0 <=> 0 grade; 1 <=> 90 grade; 2 <=> 180 grade; 3 <=> 270 grade
 } piese[MAX_PIESE];
-
 
 struct grafuri{
     int intrari[5][5];
@@ -92,6 +94,110 @@ struct grafuri{
 
 int nrPiese = -1; /// Nr de piese aflate pe ecran
 
+void roteste (float x, float y, float & x_nou, float & y_nou)
+{
+    x_nou = y;
+    y_nou = -x;
+}
+void myRectangle(int orientare, int index, int i, int &a, int &b, int &c, int &d)
+{
+    float x1, y1, x2, y2, x1_nou, x2_nou, y1_nou, y2_nou;
+        x1=figuri[index].bucati[i][0];
+        y1=figuri[index].bucati[i][1];
+        x2=figuri[index].bucati[i][2];
+        y2=figuri[index].bucati[i][3];
+    switch (orientare)
+    {
+            case 0:
+            {
+                x1_nou=x1; y1_nou=y1; x2_nou=x2; y2_nou=y2;
+                break;
+            }
+            case 1:
+            {
+                roteste(x1,y1,x1_nou,y1_nou);
+                roteste(x2,y2,x2_nou,y2_nou);
+                break;
+            }
+            case 2:
+            {
+                roteste(x1,y1,x1_nou,y1_nou); roteste(x1_nou,y1_nou,x1,y1); x1_nou=x1; y1_nou=y1;
+                roteste(x2,y2,x2_nou,y2_nou); roteste(x2_nou,y2_nou,x2,y2); x2_nou=x2; y2_nou=y2;
+                break;
+            }
+            case 3:
+            {
+                roteste(x1,y1,x1_nou,y1_nou); roteste(x1_nou,y1_nou,x1,y1); roteste(x1,y1,x1_nou,y1_nou);
+                roteste(x2,y2,x2_nou,y2_nou); roteste(x2_nou,y2_nou,x2,y2); roteste(x2,y2,x2_nou,y2_nou);
+                break;
+            }
+    }
+    a=figuri[index].marire*x1_nou;
+    b=figuri[index].marire*y1_nou;
+    c=figuri[index].marire*x2_nou;
+    d=figuri[index].marire*y2_nou;
+}
+
+    void myLine(int orientare, int index, int i, int &a, int &b, int &c, int &d)
+{
+    float x1 = figuri[index].bucati[i][0];
+    float y1 = figuri[index].bucati[i][1];
+    float x2 = figuri[index].bucati[i][2];
+    float y2 = figuri[index].bucati[i][3];
+
+    float x1_nou = x1, y1_nou = y1, x2_nou = x2, y2_nou = y2;
+
+    for (int j = 0; j < orientare; ++j)
+    {
+        roteste(x1_nou, y1_nou, x1_nou, y1_nou);
+        roteste(x2_nou, y2_nou, x2_nou, y2_nou);
+    }
+
+    a = figuri[index].marire * x1_nou;
+    b = figuri[index].marire * y1_nou;
+    c = figuri[index].marire * x2_nou;
+    d = figuri[index].marire * y2_nou;
+}
+
+
+void myEllipse(int orientare, int index, int i, int &a, int &b, int &c, int &d)
+{
+    float x1, y1, x2, y2, x1_nou, x2_nou, y1_nou, y2_nou;
+
+        x1=figuri[index].bucati[i][0];
+        y1=figuri[index].bucati[i][1];
+        x2=figuri[index].bucati[i][2];
+        y2=figuri[index].bucati[i][3];
+
+    switch (orientare)
+    {
+        case 0:
+        {
+            x1_nou=x1; y1_nou=y1; x2_nou=x2; y2_nou=y2;
+            break;
+        }
+        case 1:
+        {
+            roteste(x1,y1,x1_nou,y1_nou); x2_nou=y2; y2_nou=x2; break;
+        }
+        case 2:
+        {
+            roteste(x1,y1,x1_nou,y1_nou); roteste(x1_nou,y1_nou,x1,y1);
+            x1_nou=x1; y1_nou=y1; x2_nou=x2; y2_nou=y2;
+            break;
+        }
+        case 3:
+        {
+            roteste(x1,y1,x1_nou,y1_nou); roteste(x1_nou,y1_nou,x1,y1); roteste(x1,y1,x1_nou,y1_nou);
+            x2_nou=y2; y2_nou=x2;
+            break;
+        }
+    }
+    a=figuri[index].marire*x1_nou;
+    b=figuri[index].marire*y1_nou;
+    c=figuri[index].marire*x2_nou;
+    d=figuri[index].marire*y2_nou;
+}
 /// Deseneaza Bara de Iteme/Piese
 void DeseneazaBaraDeIteme()
 {
@@ -209,27 +315,36 @@ bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
     }
     return true;
 }
-void desenare_piesa (int x, int y, int index)
+void desenare_piesa (piesa P, int CULOARE)
 {
+    int x=P.x; int y=P.y;
+    int index=P.index;
+    int orientare=P.orientare;
     setbkcolor(BLACK);
-    setcolor(COLOR(255,255,51));
+    setcolor(CULOARE);
     for (int i=0; i<figuri[index].nr_bucati; ++i)
     {
         char type=figuri[index].tip_bucata[i];
+/*
         int a=figuri[index].marire*figuri[index].bucati[i][0];
         int b=figuri[index].marire*figuri[index].bucati[i][1];
         int c=figuri[index].marire*figuri[index].bucati[i][2];
         int d=figuri[index].marire*figuri[index].bucati[i][3];
+*/
+        int a=0; int b=0; int c=0; int d=0;
         if (type=='L')
         {
+            myLine(orientare, index, i, a, b, c, d);
             line(x+a,y+b,x+c,y+d);
         }
         else if (type=='O')
         {
+            myEllipse(orientare, index, i, a, b, c, d);
             ellipse(x+a,y+b,0,360,c,d);
         }
         else if (type=='R')
         {
+            myRectangle(orientare, index, i, a, b, c, d);
             rectangle(x+a,y+b,x+c,y+d);
         }
     }
@@ -248,6 +363,7 @@ void calcul_intratri(piesa &piesaNoua)
 }
 void incadrare (piesa& piesaNoua, int x, int y, int index)
 {
+    piesaNoua.orientare=0;
     piesaNoua.x1=piesaNoua.y1=9999;
     piesaNoua.x2=piesaNoua.y2=0;
     for (int i=0; i<figuri[index].nr_bucati; ++i)
@@ -283,6 +399,47 @@ void incadrare (piesa& piesaNoua, int x, int y, int index)
     piesaNoua.y=y;
     piesaNoua.index=index;
     calcul_intratri(piesaNoua);
+}
+void incadrare_PiesaModificata(piesa& piesaVeche)
+{
+    ///re-initializarea colturilor
+    piesaVeche.x1=piesaVeche.y1=9999;
+    piesaVeche.x2=piesaVeche.y2=0;
+
+    int index=piesaVeche.index;
+    int orientare=piesaVeche.orientare;
+    int x=piesaVeche.x;
+    int y=piesaVeche.y;
+    for (int i=0; i<figuri[index].nr_bucati; ++i)
+    {
+        char type=figuri[index].tip_bucata[i];
+        int a, b, c, d;
+        if (type=='L')
+        {
+            myLine(orientare, index, i, a, b, c, d);
+            piesaVeche.x1 = min(min(piesaVeche.x1, x + a), x + c);
+            piesaVeche.y1 = min(min(piesaVeche.y1, y + b), y + d);
+            piesaVeche.x2 = max(max(piesaVeche.x2, x + a), x + c);
+            piesaVeche.y2 = max(max(piesaVeche.y2, y + b), y + d);
+        }
+        else if (type=='O')
+        {
+            myEllipse(orientare, index, i, a, b, c, d);
+            piesaVeche.x1=min(piesaVeche.x1,x+a-c);
+            piesaVeche.y1=min(piesaVeche.y1,y+b-d);
+            piesaVeche.x2=max(piesaVeche.x2,x+a+c);
+            piesaVeche.y2=max(piesaVeche.y2,y+b+d);
+        }
+        else if (type=='R')
+        {
+            myRectangle(orientare, index, i, a, b, c, d);
+            piesaVeche.x1=min(piesaVeche.x1,x+a);
+            piesaVeche.y1=min(piesaVeche.y1,y+b);
+            piesaVeche.x2=max(piesaVeche.x2,x+c);
+            piesaVeche.y2=max(piesaVeche.y2,y+d);
+        }
+    }
+    calcul_intratri(piesaVeche);
 }
 /// Functie care detecta ce Item a fost apasat
 int getItemIndex(int x, int y)
@@ -327,7 +484,7 @@ void redraw()
     DeseneazaBaraDeTools();
     desenare_legaturi();
     for (int i=0; i<=nrPiese; ++i)
-        desenare_piesa(piese[i].x,piese[i].y,piese[i].index);
+        {int CULOARE=COLOR(255,255,51); desenare_piesa(piese[i], CULOARE);}
 }
 void AnimareChenar (int state)
 {
@@ -523,6 +680,20 @@ void AsteptareSelectie ()
         redraw();
     }
 }
+void rotire()
+{
+    AsteptareSelectie();
+    int x = mousex();
+    int y = mousey();
+    clearmouseclick(WM_LBUTTONDOWN);
+    int i=index_figura_apasata(x, y);
+    desenare_piesa(piese[i], FUNDAL);
+    piese[i].orientare=(piese[i].orientare+1)%4;
+    int CULOARE=COLOR(255,255,51);
+    desenare_piesa(piese[i], CULOARE);
+    incadrare_PiesaModificata(piese[i]);
+
+}
 void Tool_Cases(int index)
 {
     switch (index)
@@ -536,7 +707,7 @@ void Tool_Cases(int index)
         }
         case 1:
         {
-
+            rotire();
             break;
         }
         case 3:
@@ -589,7 +760,8 @@ int main()
                 incadrare(piesaNoua,x,y,Item_Selectat);
                 if (sePoateDesena(piesaNoua,x,y,Item_Selectat))
                 {
-                    desenare_piesa(x, y, Item_Selectat);
+                    int CULOARE=COLOR(255,255,51);
+                    desenare_piesa(piesaNoua, CULOARE);
                     piese[++nrPiese]=piesaNoua;
                 }
                 Item_Selectat=-1;
