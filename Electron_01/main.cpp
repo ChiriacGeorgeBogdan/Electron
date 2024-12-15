@@ -101,44 +101,27 @@ void roteste (float x, float y, float & x_nou, float & y_nou)
 }
 void myRectangle(int orientare, int index, int i, int &a, int &b, int &c, int &d)
 {
-    float x1, y1, x2, y2, x1_nou, x2_nou, y1_nou, y2_nou;
-        x1=figuri[index].bucati[i][0];
-        y1=figuri[index].bucati[i][1];
-        x2=figuri[index].bucati[i][2];
-        y2=figuri[index].bucati[i][3];
-    switch (orientare)
-    {
-            case 0:
-            {
-                x1_nou=x1; y1_nou=y1; x2_nou=x2; y2_nou=y2;
-                break;
-            }
-            case 1:
-            {
-                roteste(x1,y1,x1_nou,y1_nou);
-                roteste(x2,y2,x2_nou,y2_nou);
-                break;
-            }
-            case 2:
-            {
-                roteste(x1,y1,x1_nou,y1_nou); roteste(x1_nou,y1_nou,x1,y1); x1_nou=x1; y1_nou=y1;
-                roteste(x2,y2,x2_nou,y2_nou); roteste(x2_nou,y2_nou,x2,y2); x2_nou=x2; y2_nou=y2;
-                break;
-            }
-            case 3:
-            {
-                roteste(x1,y1,x1_nou,y1_nou); roteste(x1_nou,y1_nou,x1,y1); roteste(x1,y1,x1_nou,y1_nou);
-                roteste(x2,y2,x2_nou,y2_nou); roteste(x2_nou,y2_nou,x2,y2); roteste(x2,y2,x2_nou,y2_nou);
-                break;
-            }
-    }
-    a=figuri[index].marire*x1_nou;
-    b=figuri[index].marire*y1_nou;
-    c=figuri[index].marire*x2_nou;
-    d=figuri[index].marire*y2_nou;
-}
+    float x1 = figuri[index].bucati[i][0];
+    float y1 = figuri[index].bucati[i][1];
+    float x2 = figuri[index].bucati[i][2];
+    float y2 = figuri[index].bucati[i][3];
 
-    void myLine(int orientare, int index, int i, int &a, int &b, int &c, int &d)
+    float x1_nou = x1, y1_nou = y1, x2_nou = x2, y2_nou = y2;
+
+    for (int j = 0; j < orientare; ++j)
+    {
+        roteste(x1_nou, y1_nou, x1_nou, y1_nou);
+        roteste(x2_nou, y2_nou, x2_nou, y2_nou);
+    }
+
+    a = figuri[index].marire * x1_nou;
+    b = figuri[index].marire * y1_nou;
+    c = figuri[index].marire * x2_nou;
+    d = figuri[index].marire * y2_nou;
+    if(a>c) swap(a,c);
+    if(b>d) swap(b,d);
+}
+void myLine(int orientare, int index, int i, int &a, int &b, int &c, int &d)
 {
     float x1 = figuri[index].bucati[i][0];
     float y1 = figuri[index].bucati[i][1];
@@ -162,41 +145,23 @@ void myRectangle(int orientare, int index, int i, int &a, int &b, int &c, int &d
 
 void myEllipse(int orientare, int index, int i, int &a, int &b, int &c, int &d)
 {
-    float x1, y1, x2, y2, x1_nou, x2_nou, y1_nou, y2_nou;
+    float x1 = figuri[index].bucati[i][0];
+    float y1 = figuri[index].bucati[i][1];
+    float rx = figuri[index].bucati[i][2];
+    float ry = figuri[index].bucati[i][3];
 
-        x1=figuri[index].bucati[i][0];
-        y1=figuri[index].bucati[i][1];
-        x2=figuri[index].bucati[i][2];
-        y2=figuri[index].bucati[i][3];
+    float x1_nou = x1, y1_nou = y1;
 
-    switch (orientare)
+    for (int j = 0; j < orientare; ++j)
     {
-        case 0:
-        {
-            x1_nou=x1; y1_nou=y1; x2_nou=x2; y2_nou=y2;
-            break;
-        }
-        case 1:
-        {
-            roteste(x1,y1,x1_nou,y1_nou); x2_nou=y2; y2_nou=x2; break;
-        }
-        case 2:
-        {
-            roteste(x1,y1,x1_nou,y1_nou); roteste(x1_nou,y1_nou,x1,y1);
-            x1_nou=x1; y1_nou=y1; x2_nou=x2; y2_nou=y2;
-            break;
-        }
-        case 3:
-        {
-            roteste(x1,y1,x1_nou,y1_nou); roteste(x1_nou,y1_nou,x1,y1); roteste(x1,y1,x1_nou,y1_nou);
-            x2_nou=y2; y2_nou=x2;
-            break;
-        }
+        roteste(x1_nou, y1_nou, x1_nou, y1_nou);
+        swap(rx, ry);
     }
-    a=figuri[index].marire*x1_nou;
-    b=figuri[index].marire*y1_nou;
-    c=figuri[index].marire*x2_nou;
-    d=figuri[index].marire*y2_nou;
+
+    a = figuri[index].marire * x1_nou;
+    b = figuri[index].marire * y1_nou;
+    c = figuri[index].marire * rx;
+    d = figuri[index].marire * ry;
 }
 /// Deseneaza Bara de Iteme/Piese
 void DeseneazaBaraDeIteme()
@@ -690,8 +655,8 @@ void rotire()
     desenare_piesa(piese[i], FUNDAL);
     piese[i].orientare=(piese[i].orientare+1)%4;
     int CULOARE=COLOR(255,255,51);
-    desenare_piesa(piese[i], CULOARE);
     incadrare_PiesaModificata(piese[i]);
+    desenare_piesa(piese[i], CULOARE);
 
 }
 void Tool_Cases(int index)
