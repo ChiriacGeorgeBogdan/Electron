@@ -18,10 +18,11 @@ const int INALTIMEA_BAREI_DE_ITEME = 50;   /// inaltimea Item BAR
 const int LATIME_TOOLBAR = 150;
 const int NR_TOOLS=7;
 const int NR_ITEME=13;
+const int REFRESH_RATE=1000.0/60;
 
 const int MAX_PIESE = 100;  /// Nr maxim de piese pe care le putem desena
 
-const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Erase Shape", "Clear Mouse", "Erase All", "Erase Connection"};
+const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Erase Shape", "Erase All", "Undo", "Redo"};
 const char Item_Labels[NR_ITEME][15]= {"Shape 1"};
 
 
@@ -36,7 +37,7 @@ struct figura
     int nr_bucati;
     double bucati[20][4];
     char tip_bucata[20];
-    int marire;
+    double marire;
 } figuri[50];
 
 void citire_figura(int index)
@@ -713,6 +714,12 @@ void mutare_piesa ()
     cleardevice();
     redraw();
 }
+void erase_all()
+{
+    nrPiese=-1;
+    cleardevice();
+    redraw();
+}
 void Tool_Cases(int index)
 {
     switch (index)
@@ -732,6 +739,13 @@ void Tool_Cases(int index)
         case 3:
             AsteptareSelectie();
             stergere_piesa();
+            break;
+        case 4:
+            erase_all();
+            break;
+        case 5:
+            break;
+        case 6:
             break;
         default:
             return;
@@ -786,7 +800,10 @@ int main()
                 Item_Selectat=-1;
             }
         }
+        if (ismouseclick(WM_RBUTTONDOWN))
+        {
 
+        }
     }
 
     closegraph();
