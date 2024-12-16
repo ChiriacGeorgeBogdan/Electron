@@ -700,7 +700,9 @@ void mutare_piesa ()
             int y=mousey();
             clearmouseclick(WM_LBUTTONDOWN);
             piesa copiePiesa=piese[i];
-            incadrare(copiePiesa,x,y,copiePiesa.index);
+            copiePiesa.x=x;
+            copiePiesa.y=y;
+            incadrare_PiesaModificata(copiePiesa);
             if (sePoateDesena(copiePiesa,x,y,copiePiesa.index))
             {
                 piese[i]=copiePiesa;
