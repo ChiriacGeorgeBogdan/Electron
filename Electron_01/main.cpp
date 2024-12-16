@@ -625,7 +625,7 @@ void trasare_legatura()
         }*/
     }
 }
-void stergere_piesa()
+int cauta_piesa()
 {
     int x=mousex();
     int y=mousey();
@@ -634,21 +634,27 @@ void stergere_piesa()
     pseudopiesa.y1=pseudopiesa.y2=y;
     for (int i=0; i<=nrPiese;++i)
         if (seIntersecteaza(piese[i],pseudopiesa))
-        {
-            for (int j=0; j<=nrPiese; ++j)
-                for (int e=0; e<3; ++e)
-                    for (int f=0; f<3; ++f)
-                    {
-                        graf[i][j].intrari[e][f]=graf[nrPiese][j].intrari[e][f];
-                        graf[nrPiese][j].intrari[e][f]=0;
-                        graf[j][i].intrari[e][f]=graf[j][nrPiese].intrari[e][f];
-                        graf[j][nrPiese].intrari[e][f]=0;
+            return i;
+    return -1;
+}
+void stergere_piesa()
+{
+    int i=cauta_piesa();
+    if (i!=-1)
+    {
+        for (int j=0; j<=nrPiese; ++j)
+            for (int e=0; e<3; ++e)
+                for (int f=0; f<3; ++f)
+                {
+                    graf[i][j].intrari[e][f]=graf[nrPiese][j].intrari[e][f];
+                    graf[nrPiese][j].intrari[e][f]=0;
+                    graf[j][i].intrari[e][f]=graf[j][nrPiese].intrari[e][f];
+                    graf[j][nrPiese].intrari[e][f]=0;
 
-                    }
-            piese[i]=piese[nrPiese--];
-            cout<<"Piesa stearsa este"<<i<<"\n";
-            break;
-        }
+                }
+        piese[i]=piese[nrPiese--];
+        cout<<"Piesa stearsa este"<<i<<"\n";
+    }
     cleardevice();
     redraw();
 }
@@ -680,23 +686,47 @@ void rotire()
     redraw();
 
 }
+void mutare_piesa ()
+{
+
+    AsteptareSelectie();
+    int i=cauta_piesa();
+    clearmouseclick(WM_LBUTTONDOWN);
+    while (true && i!=-1)
+    {
+        if (ismouseclick(WM_LBUTTONDOWN))
+        {
+            int x=mousex();
+            int y=mousey();
+            clearmouseclick(WM_LBUTTONDOWN);
+            piesa copiePiesa=piese[i];
+            incadrare(copiePiesa,x,y,copiePiesa.index);
+            if (sePoateDesena(copiePiesa,x,y,copiePiesa.index))
+            {
+                piese[i]=copiePiesa;
+            }
+            break;
+        }
+    }
+    cleardevice();
+    redraw();
+}
 void Tool_Cases(int index)
 {
     switch (index)
     {
         case 0:
-        {
             desenare_intrari(WHITE);
             trasare_legatura();
             stergere_intrari();
             //redraw();
             break;
-        }
         case 1:
-        {
             rotire();
             break;
-        }
+        case 2:
+            mutare_piesa();
+            break;
         case 3:
             AsteptareSelectie();
             stergere_piesa();
