@@ -609,8 +609,18 @@ void trasare_legatura()
 
     while (running_desenare_legaturi)
     {
+        while (!ismouseclick(WM_LBUTTONDOWN))
+        {
+            int x=mousex();
+            int y=mousey();
+            golire_ecran();
+            redraw();
+            desenare_intrari(WHITE);
+            drawLine(piese[Index_01].intrari[Index_intrare_01].x,piese[Index_01].intrari[Index_intrare_01].y,x,y,RED);
+            delay(1000/REFRESH_RATE);
+        }
         int previous_x=-1, previous_y=-1;
-        if (ismouseclick(WM_LBUTTONDOWN))
+      //  if (ismouseclick(WM_LBUTTONDOWN))
         {
 
             int x = mousex();
