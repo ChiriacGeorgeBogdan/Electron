@@ -19,7 +19,7 @@ const int INALTIMEA_BAREI_DE_ITEME = 50;   /// inaltimea Item BAR
 const int LATIME_TOOLBAR = 150;
 const int NR_TOOLS=7;
 const int NR_ITEME=13;
-const int REFRESH_RATE=1000.0/60;
+const int REFRESH_RATE=1000.0/30;
 
 const int MAX_PIESE = 100;  /// Nr maxim de piese pe care le putem desena
 const int MAX_INTRARI = 3;
@@ -627,7 +627,7 @@ void trasare_legatura()
             redraw();
             desenare_intrari(WHITE);
             drawLine(piese[Index_01].intrari[Index_intrare_01].x,piese[Index_01].intrari[Index_intrare_01].y,x,y,RED);
-            delay(1000/REFRESH_RATE);
+            delay(REFRESH_RATE);
         }
         int previous_x=-1, previous_y=-1;
       //  if (ismouseclick(WM_LBUTTONDOWN))
@@ -798,7 +798,7 @@ void mutare_piesa ()
         }
         golire_ecran();
         redraw();
-        delay(1000/REFRESH_RATE);
+        delay(REFRESH_RATE);
     }
    // piesaPeCursor=-1;
     golire_ecran();
@@ -921,7 +921,7 @@ int main()
         {
 
         }
-        delay(1000/REFRESH_RATE);
+        delay(REFRESH_RATE);
         golire_ecran();
         redraw();
     }
