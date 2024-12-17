@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdio>
 #include <fstream>
+#include <vector>
 
 #define FUNDAL 0
 
@@ -21,10 +22,10 @@ const int NR_ITEME=13;
 const int REFRESH_RATE=1000.0/60;
 
 const int MAX_PIESE = 100;  /// Nr maxim de piese pe care le putem desena
+const int MAX_INTRARI = 3;
 
 const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Erase Shape", "Erase All", "Undo", "Redo"};
 const char Item_Labels[NR_ITEME][15]= {"Shape 1"};
-
 
 //fisierele si structura aferenta figurilor
 const char fisiere[20][15]= {"AMPLOP.PS","BATERIE.PS","CONDENS.PS","DIODA.PS","NOD.PS","POLARIZ.PS","REZIST.PS","SERVOMOT.PS","SINU.PS","STOP.PS","TRANZNPN.PS","TRANZPNP.PS","ZENNER.PS"};
@@ -39,6 +40,11 @@ struct figura
     char tip_bucata[20];
     double marire;
 } figuri[50];
+
+//Stiva modificarilor
+vector<figura>stiva[1000];
+int p=0,q=-1;
+
 
 void citire_figura(int index)
 {
@@ -85,15 +91,16 @@ struct piesa
 {
     int x1,y1,x2,y2;//colt stanga sus si colt dreapta jos
     int x,y,index;
-    intrare intrari[5];
+    intrare intrari[MAX_INTRARI];
     int orientare; /// 0 <=> 0 grade; 1 <=> 90 grade; 2 <=> 180 grade; 3 <=> 270 grade
 } piese[MAX_PIESE];
 
 struct grafuri{
-    int intrari[5][5];
+    int intrari[MAX_INTRARI][MAX_INTRARI];
 }graf[MAX_PIESE][MAX_PIESE];
 
 int nrPiese = -1; /// Nr de piese aflate pe ecran
+int piesaPeCursor = -1;
 
 void roteste (float x, float y, float & x_nou, float & y_nou)
 {
@@ -217,6 +224,7 @@ void DeseneazaBaraDeTools()
     int TOOLS_Inaltime = (INALTIME_ECRAN-INALTIMEA_BAREI_DE_ITEME)/NR_TOOLS;
     for ( int i=0; i< NR_TOOLS; ++i)
     {
+        setbkcolor(BLACK);
         setfillstyle(SOLID_FILL, DARKGRAY);
         bar(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
 
@@ -251,7 +259,7 @@ bool seIntersecteaza (piesa a, piesa b)
 }
 bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
 {
-    for (int i=0; i<=nrPiese; ++i)
+    for (int i=0; i<nrPiese; ++i)
     {
         //verificam daca se intersecteaza cu alte piese
         if (seIntersecteaza(piesaNoua,piese[i]))
@@ -280,6 +288,18 @@ bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
         }
     }
     return true;
+}
+void golire_ecran ()
+{
+    /*
+    setcolor(BLACK);
+    setbkcolor(BLACK);
+    setfillstyle(SOLID_FILL,BLACK);
+    floodfill(0,0,RGB(102,495,203));*/
+  //  rectangle(0,0,LATIME_ECRAN, INALTIME_ECRAN);
+  setbkcolor(BLACK);
+  setfillstyle(SOLID_FILL,BLACK);
+  bar(LATIME_TOOLBAR+1,INALTIMEA_BAREI_DE_ITEME+1,LATIME_ECRAN,INALTIME_ECRAN);
 }
 void desenare_piesa (piesa P, int CULOARE)
 {
@@ -330,7 +350,7 @@ void myIntrari(int orientare, int index, int i, int &a, int &b)
     a = figuri[index].marire * x1_nou;
     b = figuri[index].marire * y1_nou;
 }
-void calcul_intratri(piesa &piesaNoua)
+void calcul_intrari(piesa &piesaNoua)
 {
     int index=piesaNoua.index;
     int orientare=piesaNoua.orientare;
@@ -379,7 +399,7 @@ void incadrare (piesa& piesaNoua, int x, int y, int index)
     piesaNoua.x=x;
     piesaNoua.y=y;
     piesaNoua.index=index;
-    calcul_intratri(piesaNoua);
+    calcul_intrari(piesaNoua);
 }
 void incadrare_PiesaModificata(piesa& piesaVeche)
 {
@@ -420,7 +440,7 @@ void incadrare_PiesaModificata(piesa& piesaVeche)
             piesaVeche.y2=max(piesaVeche.y2,y+d);
         }
     }
-    calcul_intratri(piesaVeche);
+    calcul_intrari(piesaVeche);
 }
 /// Functie care detecta ce Item a fost apasat
 int getItemIndex(int x, int y)
@@ -448,22 +468,23 @@ void desenare_legaturi()
     {
         for(int j=0; j<=nrPiese; ++j)
         {
-                for(int k=0; k<5; ++k)
+                for(int k=0; k<MAX_INTRARI; ++k)
                 {
-                    for(int u=0; u<5; ++u)
+                    for(int u=0; u<MAX_INTRARI; ++u)
                         if(graf[i][j].intrari[k][u]==1)
                             drawLine(piese[i].intrari[k].x, piese[i].intrari[k].y, piese[j].intrari[u].x, piese[j].intrari[u].y , RED);
                 }
         }
     }
 }
-
 void redraw()
 {
     setbkcolor(BLACK);
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
     desenare_legaturi();
+   // if (piesaPeCursor)
+     //   desenare_piesa_cursor();
     for (int i=0; i<=nrPiese; ++i)
         {int CULOARE=COLOR(255,255,51); desenare_piesa(piese[i], CULOARE);}
 }
@@ -656,7 +677,7 @@ void stergere_piesa()
         piese[i]=piese[nrPiese--];
         cout<<"Piesa stearsa este"<<i<<"\n";
     }
-    cleardevice();
+    golire_ecran();
     redraw();
 }
 void AsteptareSelectie ()
@@ -668,7 +689,7 @@ void AsteptareSelectie ()
         //desenare_intrari();
         delay(500);
         state=1-state;
-        cleardevice();
+        golire_ecran();
         redraw();
     }
 }
@@ -683,7 +704,7 @@ void rotire()
     piese[i].orientare=(piese[i].orientare+1)%4;
     int CULOARE=COLOR(255,255,51);
     incadrare_PiesaModificata(piese[i]);
-    cleardevice();
+    golire_ecran();
     redraw();
 
 }
@@ -692,32 +713,73 @@ void mutare_piesa ()
 
     AsteptareSelectie();
     int i=cauta_piesa();
+    // piesaPeCursor=i;
+    piesa piesaInitiala=piese[i];
     clearmouseclick(WM_LBUTTONDOWN);
     while (true && i!=-1)
     {
+        int x=mousex();
+        int y=mousey();
+        piese[i].x=x;
+        piese[i].y=y;
+        /*
+            mai trebuie sa actualizez si pozitia intrarilor
+        */
+        calcul_intrari(piese[i]);
+
         if (ismouseclick(WM_LBUTTONDOWN))
         {
             int x=mousex();
             int y=mousey();
             clearmouseclick(WM_LBUTTONDOWN);
-            piesa copiePiesa=piese[i];
+            piesa copiePiesa=piesaInitiala;
             copiePiesa.x=x;
             copiePiesa.y=y;
             incadrare_PiesaModificata(copiePiesa);
             if (sePoateDesena(copiePiesa,x,y,copiePiesa.index))
             {
                 piese[i]=copiePiesa;
+                cout<<"S a mutat piesa "<<i<<'\n';
             }
+            else piese[i]=piesaInitiala;
             break;
         }
+        golire_ecran();
+        redraw();
+        delay(1000/REFRESH_RATE);
     }
-    cleardevice();
+   // piesaPeCursor=-1;
+    golire_ecran();
     redraw();
+}
+void plasare_piesa_noua(int Item_Selectat)
+{
+    //cream piesa noua
+    piese[++nrPiese].index=Item_Selectat;
+    piese[nrPiese].orientare=0;
+    //asteptam plasarea
+    while (!ismouseclick(WM_LBUTTONDOWN))
+    {
+        int x=mousex();
+        int y=mousey();
+        piese[nrPiese].x=x;
+        piese[nrPiese].y=y;
+        golire_ecran();
+        redraw();
+        delay(1000/REFRESH_RATE);
+    }
+    int x=mousex();
+    int y=mousey();
+    clearmouseclick(WM_LBUTTONDOWN);
+    incadrare(piese[nrPiese],x,y,Item_Selectat);
+    if (!sePoateDesena(piese[nrPiese],x,y,Item_Selectat))
+        nrPiese--;
+
 }
 void erase_all()
 {
     nrPiese=-1;
-    cleardevice();
+    golire_ecran();
     redraw();
 }
 void Tool_Cases(int index)
@@ -727,7 +789,7 @@ void Tool_Cases(int index)
         case 0:
             desenare_intrari(WHITE);
             trasare_legatura();
-            stergere_intrari();
+            //stergere_intrari();
             //redraw();
             break;
         case 1:
@@ -744,6 +806,17 @@ void Tool_Cases(int index)
             erase_all();
             break;
         case 5:
+            /*
+            Stiva:
+            -piesa noua
+            -mutare piesa
+            -rotire piesa
+            -face legatura  ->  pun piesele intre care se fac legaturile i=(x,y)->j=(X,Y)
+            -stergere piesa  -> piesa stearsa
+            -sterge tot  -> tot ce a fost sters
+
+
+            */
             break;
         case 6:
             break;
@@ -751,7 +824,6 @@ void Tool_Cases(int index)
             return;
     }
 }
-
 int main()
 {
     citire_figuri();
@@ -782,28 +854,24 @@ int main()
             }
             else if (y <= INALTIMEA_BAREI_DE_ITEME)
             {
+
                 /// Click in intem bar
                 Item_Selectat = getItemIndex(x, y);
+                plasare_piesa_noua(Item_Selectat);
+
                 cout << "Numarul itemului selectat " << Item_Selectat << endl;
-            }
-            else if (Item_Selectat != -1)
-            {
-                /// Click inafara item barului
-                piesa piesaNoua;
-                incadrare(piesaNoua,x,y,Item_Selectat);
-                if (sePoateDesena(piesaNoua,x,y,Item_Selectat))
-                {
-                    int CULOARE=COLOR(255,255,51);
-                    desenare_piesa(piesaNoua, CULOARE);
-                    piese[++nrPiese]=piesaNoua;
-                }
+
                 Item_Selectat=-1;
             }
+
         }
         if (ismouseclick(WM_RBUTTONDOWN))
         {
 
         }
+        delay(1000/REFRESH_RATE);
+        golire_ecran();
+        redraw();
     }
 
     closegraph();
