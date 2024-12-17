@@ -238,10 +238,12 @@ void DeseneazaBaraDeTools()
         setcolor(BLACK);
         char label[20];
         strcpy(label, Tool_Labels[i]);
-        /*int textWidth = textwidth(label);
+        /*
+        int textWidth = textwidth(label);
         int textHeight = textheight(label);
         int textX = (LATIME_TOOLBAR - textWidth) / 2; // Center horizontally
-        int textY = INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime + (TOOLS_Inaltime - textHeight) / 2;*/
+        int textY = INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime + (TOOLS_Inaltime - textHeight) / 2;
+        */
         outtextxy(20, 10+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, label);
     }
 
@@ -581,6 +583,7 @@ void trasare_legatura()
 {
     int Index_01 = -1, Index_intrare_01 = -1;
     int Index_02 = -1, Index_intrare_02 = -1;
+    int previousPiesa=-1, previousIntrare=-1;
     bool running_desenare_legaturi = true;
 
     while (running_desenare_legaturi)
@@ -590,7 +593,6 @@ void trasare_legatura()
             int x = mousex();
             int y = mousey();
             clearmouseclick(WM_LBUTTONDOWN);
-
             cout<<"Primul click la: (" << x << ", " << y << ")"<<endl;
 
             identificare_nod(running_desenare_legaturi, Index_01, Index_intrare_01, x, y);
@@ -598,6 +600,14 @@ void trasare_legatura()
             if (Index_01 != -1 && Index_intrare_01 != -1)
             {
                 cout<<"Primul nod a fost identificat: Index "<<Index_01<<", Intrare "<<Index_intrare_01<<endl;
+                for(int i=0; i<=nrPiese; ++i)
+                {
+                    for(int j=0; j<figuri[piese[i].index].nr_intrari; ++j)
+                    {
+                        if(graf[Index_01][i].intrari[Index_intrare_01][j]==1)
+                            {previousPiesa=i; previousIntrare=j;}
+                    }
+                }
                 break;
             }
             else
@@ -635,14 +645,46 @@ void trasare_legatura()
             {
                 cout<<"Nodul al doilea a fost identificat la: Index "<<Index_02<< ", Intrare "<<Index_intrare_02<<endl;
 
-                drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,RED);
+
                 graf[Index_01][Index_02].intrari[Index_intrare_01][Index_intrare_02]=1;
+                if(previousIntrare>=0 && previousPiesa>=0)
+                {
+                    graf[Index_01][previousPiesa].intrari[Index_intrare_01][previousIntrare]=0;
+                    cleardevice();
+                    redraw();
+                }
+                else
+                    drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,RED);
                 break;
             }
-            else
+            else if(Index_02==-1 && Index_intrare_02==-1) ///I.e daca x si y nu se intersercteaza cu o piesa sau o intrare de pe tabla
             {
-                cout<<"Niciun nod valid nu a fost gasit pentru al doilea click"<<endl;
+                int IndexPiesa=4;
+                piesa piesaNoua;
+                incadrare(piesaNoua,x,y,IndexPiesa);
+                if (sePoateDesena(piesaNoua,x,y,IndexPiesa))
+                {
+                    int CULOARE=COLOR(255,255,51);
+                    desenare_piesa(piesaNoua, CULOARE);
+                    piese[++nrPiese]=piesaNoua;
+                    Index_02=nrPiese; Index_intrare_02=0;
+                    graf[Index_01][Index_02].intrari[Index_intrare_01][Index_intrare_02]=1;
+                    if(previousIntrare>=0 && previousPiesa>=0)
+                    {
+                        graf[Index_01][previousPiesa].intrari[Index_intrare_01][previousIntrare]=0;
+                        cleardevice();
+                        redraw();
+                    }
+                    else
+                        drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,RED);
+
+                }
+                else
+                {
+                    cout<<"Niciun nod valid nu a fost gasit pentru al doilea click"<<endl;
+                }
             }
+
         }
         /*else
         {
@@ -690,7 +732,7 @@ void stergere_piesa()
     golire_ecran();
     redraw();
 }
-void AsteptareSelectie ()
+void AsteptareSelectie()
 {
     int state=0;
     while (!ismouseclick(WM_LBUTTONDOWN))
@@ -712,7 +754,7 @@ void rotire()
     int i=index_figura_apasata(x, y);
     desenare_piesa(piese[i], FUNDAL);
     piese[i].orientare=(piese[i].orientare+1)%4;
-    int CULOARE=COLOR(255,255,51);
+    //int CULOARE=COLOR(255,255,51);
     incadrare_PiesaModificata(piese[i]);
     golire_ecran();
     redraw();
