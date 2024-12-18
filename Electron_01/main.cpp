@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 
+
 #define FUNDAL 0
 
 using namespace std;
@@ -17,14 +18,14 @@ const int INALTIME_ECRAN = 800;
 const int INALTIMEA_BAREI_DE_ITEME = 50;   /// inaltimea Item BAR
 ///Barul de tooluri este situat langa marginea stanga a ecranului (x=0) si sub barul de iteme
 const int LATIME_TOOLBAR = 150;
-const int NR_TOOLS=7;
+const int NR_TOOLS=9;
 const int NR_ITEME=13;
-const int REFRESH_RATE=1000.0/30;
+const int REFRESH_RATE=1000.0/10;
 
 const int MAX_PIESE = 100;  /// Nr maxim de piese pe care le putem desena
 const int MAX_INTRARI = 3;
 
-const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Erase Shape", "Erase All", "Undo", "Redo"};
+const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Increase","Decrease","Erase Shape", "Erase All", "Undo", "Redo"};
 const char Item_Labels[NR_ITEME][15]= {"Shape 1"};
 
 //fisierele si structura aferenta figurilor
@@ -38,12 +39,9 @@ struct figura
     int nr_bucati;
     double bucati[20][4];
     char tip_bucata[20];
-    double marire;
+    int marire;
 } figuri[50];
 
-//Stiva modificarilor
-vector<figura>stiva[1000];
-int p=0,q=-1;
 
 
 void citire_figura(int index)
@@ -93,14 +91,20 @@ struct piesa
     int x,y,index;
     intrare intrari[MAX_INTRARI];
     int orientare; /// 0 <=> 0 grade; 1 <=> 90 grade; 2 <=> 180 grade; 3 <=> 270 grade
+    double zoom;
 } piese[MAX_PIESE];
 
 struct grafuri{
     int intrari[MAX_INTRARI][MAX_INTRARI];
 }graf[MAX_PIESE][MAX_PIESE];
 
+//Stiva modificarilor
+pair<vector<int>, vector<piesa> >modificari[1000];
+vector<vector<int> >legaturi_modificate[1000];
+int p=-1,q=-1;
+
+
 int nrPiese = -1; /// Nr de piese aflate pe ecran
-int piesaPeCursor = -1;
 
 void roteste (float x, float y, float & x_nou, float & y_nou)
 {
@@ -637,6 +641,7 @@ void trasare_legatura()
             int y = mousey();
             clearmouseclick(WM_LBUTTONDOWN);
 
+
             cout<<"Coordonatele pentru al doilea click: ("<<x<<", "<<y<<")"<<endl;
 
             identificare_nod(running_desenare_legaturi, Index_02, Index_intrare_02, x, y);
@@ -647,6 +652,9 @@ void trasare_legatura()
 
 
                 graf[Index_01][Index_02].intrari[Index_intrare_01][Index_intrare_02]=1;
+                modificari[q=++p]={vector<int>{4},vector<piesa>{}};
+                legaturi_modificate[p]={{Index_01,Index_02,Index_intrare_01,Index_intrare_02}};
+
                 if(previousIntrare>=0 && previousPiesa>=0)
                 {
                     graf[Index_01][previousPiesa].intrari[Index_intrare_01][previousIntrare]=0;
@@ -716,12 +724,21 @@ void stergere_piesa()
     int i=cauta_piesa();
     if (i!=-1)
     {
+        modificari[q=++p]={vector<int>{1,i},vector<piesa>{piese[i]}};
+        legaturi_modificate[p].resize(0);
         for (int j=0; j<=nrPiese; ++j)
-            for (int e=0; e<3; ++e)
-                for (int f=0; f<3; ++f)
+            for (int e=0; e<MAX_INTRARI; ++e)
+                for (int f=0; f<MAX_INTRARI; ++f)
                 {
+                    /*
+                    adaug intr o noua structura legaturile pe care le sterg
+                    */
+                    if (graf[i][j].intrari[e][f])
+                        legaturi_modificate[p].push_back({i,j,e,f});
                     graf[i][j].intrari[e][f]=graf[nrPiese][j].intrari[e][f];
                     graf[nrPiese][j].intrari[e][f]=0;
+                    if (graf[j][i].intrari[e][f])
+                        legaturi_modificate[p].push_back({j,i,e,f});
                     graf[j][i].intrari[e][f]=graf[j][nrPiese].intrari[e][f];
                     graf[j][nrPiese].intrari[e][f]=0;
 
@@ -753,7 +770,11 @@ void rotire()
     clearmouseclick(WM_LBUTTONDOWN);
     int i=index_figura_apasata(x, y);
     desenare_piesa(piese[i], FUNDAL);
+
+    piesa piesaInitiala=piese[i];
     piese[i].orientare=(piese[i].orientare+1)%4;
+    modificari[q=++p]={vector<int>{3,i},vector<piesa>{piesaInitiala,piese[i]}};
+
     //int CULOARE=COLOR(255,255,51);
     incadrare_PiesaModificata(piese[i]);
     golire_ecran();
@@ -774,9 +795,6 @@ void mutare_piesa ()
         int y=mousey();
         piese[i].x=x;
         piese[i].y=y;
-        /*
-            mai trebuie sa actualizez si pozitia intrarilor
-        */
         calcul_intrari(piese[i]);
 
         if (ismouseclick(WM_LBUTTONDOWN))
@@ -792,6 +810,7 @@ void mutare_piesa ()
             {
                 piese[i]=copiePiesa;
                 cout<<"S a mutat piesa "<<i<<'\n';
+                modificari[q=++p]={vector<int>{2,i},vector<piesa>{piesaInitiala,piese[i]}};
             }
             else piese[i]=piesaInitiala;
             break;
@@ -809,6 +828,7 @@ void plasare_piesa_noua(int Item_Selectat)
     //cream piesa noua
     piese[++nrPiese].index=Item_Selectat;
     piese[nrPiese].orientare=0;
+    piese[nrPiese].zoom=1;
     //asteptam plasarea
     while (!ismouseclick(WM_LBUTTONDOWN))
     {
@@ -818,7 +838,7 @@ void plasare_piesa_noua(int Item_Selectat)
         piese[nrPiese].y=y;
         golire_ecran();
         redraw();
-        delay(1000/REFRESH_RATE);
+        delay(REFRESH_RATE);
     }
     int x=mousex();
     int y=mousey();
@@ -826,13 +846,145 @@ void plasare_piesa_noua(int Item_Selectat)
     incadrare(piese[nrPiese],x,y,Item_Selectat);
     if (!sePoateDesena(piese[nrPiese],x,y,Item_Selectat))
         nrPiese--;
+    else
+        modificari[q=++p]=make_pair(vector<int>{0,nrPiese},vector<piesa>{piese[nrPiese]});
 
 }
 void erase_all()
 {
+    modificari[q=++p]={{6,nrPiese},{}};
+    for (int i=0; i<=nrPiese; ++i)
+        for (int j=0; j<=nrPiese; ++j)
+            for (int e=0; e<MAX_INTRARI; ++e)
+                for (int f=0; f<MAX_INTRARI; ++f)
+                {
+                    if (graf[i][j].intrari[e][f])
+                    {
+                        legaturi_modificate[p].push_back({i,j,e,f});
+                        graf[i][j].intrari[e][f]=0;
+                    }
+                }
     nrPiese=-1;
     golire_ecran();
     redraw();
+}
+void undo()
+{
+    if (p>=0)
+    {
+        int caz=modificari[p].first[0];
+        int poz=modificari[p].first[1];
+        piesa piesaVeche;
+        if (caz!=4 && caz!=6) piesaVeche=modificari[p].second[0];
+        piesa piesaNoua;
+        if (caz==2 || caz==3) piesaNoua=modificari[p].second[1];
+        switch(caz)
+        {
+            case 0: //piesa adaugata
+                piese[poz]=piese[nrPiese--];
+                break;
+            case 1: //piesa stearsa
+                piese[++nrPiese]=piese[poz];
+                piese[poz]=piesaVeche;
+                for (int j=0; j<=nrPiese; ++j)
+                    for (int e=0; e<MAX_INTRARI; ++e)
+                        for (int f=0;f<MAX_INTRARI; ++f)
+                            graf[nrPiese][j].intrari[e][f]=graf[poz][j].intrari[e][f];
+                for (auto e:legaturi_modificate[p])
+                    graf[e[0]][e[1]].intrari[e[2]][e[3]]=1;
+                break;
+            case 2://piesa mutata
+            case 3: //piesa rotita
+                piese[poz]=piesaVeche;
+                break;
+            case 4:{ //adaugare legatura
+                /*int p1=modificari[q].first[1];
+                int p2=modificari[q].first[2];
+                int i1=modificari[q].first[3];
+                int i2=modificari[q].first[4];*/
+                int p1=legaturi_modificate[p][0][0];
+                int p2=legaturi_modificate[p][0][1];
+                int i1=legaturi_modificate[p][0][2];
+                int i2=legaturi_modificate[p][0][3];
+                graf[p1][p2].intrari[i1][i2]=0;
+                break;
+            }
+            case 5: //stergere legatura
+                break;
+            case 6://sterge tot
+                nrPiese=poz;
+                for (auto e:legaturi_modificate[p])
+                    graf[e[0]][e[1]].intrari[e[2]][e[3]]=1;
+                break;
+        }
+        p--;
+    }
+}
+void redo()
+{
+    if (p<q)
+    {
+        p++;
+        int caz=modificari[p].first[0];
+        int poz=modificari[p].first[1];
+        piesa piesaVeche;
+        if (caz!=4 && caz!=6) piesaVeche=modificari[p].second[0];
+        piesa piesaNoua;
+        if (caz==2 || caz==3) piesaNoua=modificari[p].second[1];
+        switch(caz)
+        {
+            case 0: //piesa adaugata
+                piese[++nrPiese]=piese[poz];
+                piese[poz]=piesaVeche;
+                break;
+            case 1: //piesa stearsa
+                for (int j=0; j<=nrPiese; ++j)
+                    for (int e=0; e<MAX_INTRARI; ++e)
+                        for (int f=0;f<MAX_INTRARI; ++f)
+                        {
+                            graf[poz][j].intrari[e][f]=graf[nrPiese][j].intrari[e][f];
+                            graf[nrPiese][j].intrari[e][f]=0;
+                            graf[j][poz].intrari[e][f]=graf[j][nrPiese].intrari[e][f];
+                            graf[j][nrPiese].intrari[e][f]=0;
+                        }
+                piese[poz]=piese[nrPiese--];
+                break;
+            case 2://piesa mutata
+            case 3: //piesa rotita
+                piese[poz]=piesaNoua;
+                break;
+            case 4:{ //adaugare legatura
+                /*int p1=modificari[q].first[1];
+                int p2=modificari[q].first[2];
+                int i1=modificari[q].first[3];
+                int i2=modificari[q].first[4];*/
+                int p1=legaturi_modificate[p][0][0];
+                int p2=legaturi_modificate[p][0][1];
+                int i1=legaturi_modificate[p][0][2];
+                int i2=legaturi_modificate[p][0][3];
+                graf[p1][p2].intrari[i1][i2]=1;
+                break;
+            }
+            case 5: //stergere legatura
+                break;
+            case 6://sterge tot
+                nrPiese=-1;
+                for (auto e:legaturi_modificate[p])
+                    graf[e[0]][e[1]].intrari[e[2]][e[3]]=0;
+                break;
+        }
+    }
+}
+void increase()
+{
+    while (1)
+    {
+        if (ismouseclick(WM_LBUTTONDOWN))
+        {
+
+            return ;
+        }
+    }
 }
 void Tool_Cases(int index)
 {
@@ -851,26 +1003,23 @@ void Tool_Cases(int index)
             mutare_piesa();
             break;
         case 3:
+            //maririe
+            break;
+        case 4:
+            //micsorare
+            break;
+        case 5:
             AsteptareSelectie();
             stergere_piesa();
             break;
-        case 4:
+        case 6:
             erase_all();
             break;
-        case 5:
-            /*
-            Stiva:
-            -piesa noua
-            -mutare piesa
-            -rotire piesa
-            -face legatura  ->  pun piesele intre care se fac legaturile i=(x,y)->j=(X,Y)
-            -stergere piesa  -> piesa stearsa
-            -sterge tot  -> tot ce a fost sters
-
-
-            */
+        case 7:
+            undo();
             break;
-        case 6:
+        case 8:
+            redo();
             break;
         default:
             return;
