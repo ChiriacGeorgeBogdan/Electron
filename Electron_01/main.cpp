@@ -9,10 +9,10 @@
 #define FUNDAL 0
 
 using namespace std;
-
+void redraw();
 /// Constants
-const int LATIME_ECRAN = 1600;
-const int INALTIME_ECRAN = 800;
+const int LATIME_ECRAN = 1800;
+const int INALTIME_ECRAN = 950;
 
 ///Item barul este aflat langa marginea de sus a ecranului y=0
 const int INALTIMEA_BAREI_DE_ITEME = 50;   /// inaltimea Item BAR
@@ -42,7 +42,8 @@ struct figura
     int marire;
 } figuri[50];
 
-
+const int CULOARE_LEGATURI=GREEN;
+int CULOARE_FIGURA=YELLOW;
 
 void citire_figura(int index)
 {
@@ -92,6 +93,9 @@ struct piesa
     intrare intrari[MAX_INTRARI];
     int orientare; /// 0 <=> 0 grade; 1 <=> 90 grade; 2 <=> 180 grade; 3 <=> 270 grade
     double zoom;
+    char nume [30];
+    char valoare[30];
+    int unit;
 } piese[MAX_PIESE];
 
 struct grafuri{
@@ -303,9 +307,135 @@ void golire_ecran ()
     setfillstyle(SOLID_FILL,BLACK);
     floodfill(0,0,RGB(102,495,203));*/
   //  rectangle(0,0,LATIME_ECRAN, INALTIME_ECRAN);
-  setbkcolor(BLACK);
-  setfillstyle(SOLID_FILL,BLACK);
-  bar(LATIME_TOOLBAR+1,INALTIMEA_BAREI_DE_ITEME+1,LATIME_ECRAN,INALTIME_ECRAN);
+    setbkcolor(BLACK);
+    setfillstyle(SOLID_FILL,BLACK);
+    bar(LATIME_TOOLBAR+1,INALTIMEA_BAREI_DE_ITEME+1,LATIME_ECRAN,INALTIME_ECRAN);
+}
+
+
+char nume[100];
+int unit=-1;
+int selectionColor=COLOR(255,255,153);
+int unitColor=GREEN;
+int campActiv=-1;
+void drawOmega(int x, int y, int radius, int dir)
+{
+    setcolor(unitColor);
+    arc(x, y, dir*90, (240+dir*90)%360 , radius);
+    arc(x, y, (300 + dir*90)%360, (360+dir*90)%360, radius);
+    line(x-radius,y+radius,x-radius/2+1,y+radius);
+    line(x+radius,y+radius,x+radius/2-1,y+radius);
+}
+void desenare_caracteristici (piesa P)
+{
+    char *nume=P.nume;
+    int unit=P.unit;
+    char val[10];
+    strcpy(val,P.valoare);
+    int xc=(P.x1+P.x2)/2;
+    int yc=(P.y1+P.y2)/2;
+
+    setcolor(WHITE);
+    setbkcolor(BLACK);
+    settextstyle(DEFAULT_FONT,P.orientare,1);
+    if (P.orientare==0)
+    {
+        outtextxy(xc-textwidth(nume)/2,P.y1-textheight(nume),nume);
+        outtextxy(xc-textwidth(val)/2,P.y2,val);
+        if (unit==0)
+            drawOmega(xc+textwidth(val)/2,P.y2,4,0);
+    }
+    else if (P.orientare==1)
+    {
+        outtextxy(P.x1-textheight(nume),yc-textwidth(nume)/2,nume);
+        outtextxy(P.x2,yc-textwidth(val)/2,val);
+
+    }
+    else if (P.orientare==2)
+    {
+
+    }
+    else if (P.orientare==3)
+    {
+
+    }
+}
+
+
+struct chenare{
+    int x1,y1,x2,y2;
+}chenarModal,chenarNume,chenarValoare,chenarOhm,chenarAmp,chenarVolt,chenarButon,chenarX;
+
+int LATIME_MODAL=900;
+int INALTIME_MODAL=500;
+int LATIME_BUTON_SALVARE=250;
+int INALTIME_BUTON_SALVARE=50;
+int BKMODAL=COLOR(20,20,20);
+
+bool inchenar(int x, int y, chenare C)
+{
+    return (x>=C.x1 && x<=C.x2 && y>=C.y1 && y<=C.y2);
+}
+
+void generare_coordonate_chenare()
+{
+
+    int x=LATIME_ECRAN/2;
+    int y=INALTIME_ECRAN/2;
+    int L=LATIME_MODAL;
+    int H=INALTIME_MODAL;
+    int padding=30;
+    char *numeStr="Nume:";
+    char *valStr="Valoare:";
+    char *unitStr="Unitate masura:";
+
+    settextstyle(DEFAULT_FONT,0,3);
+    chenarModal.x1=x-L/2; chenarModal.y1=y-H/2; chenarModal.x2=x+L/2; chenarModal.y2=y+H/2;
+    chenarOhm.x1=x-L/2+padding+textwidth(unitStr);
+    chenarOhm.y1=y-H/2+padding+250-5;
+    chenarOhm.x2=x-L/2+padding+textwidth(unitStr)+25+5;
+    chenarOhm.y2=y-H/2+padding+250+25;
+
+    chenarAmp.x1=x-L/2+padding+textwidth(unitStr)+35;
+    chenarAmp.y1=y-H/2+padding+250-5;
+    chenarAmp.x2=x-L/2+padding+textwidth(unitStr)+25+5+45;
+    chenarAmp.y2=y-H/2+padding+250+25;
+
+    chenarVolt.x1=x-L/2+padding+textwidth(unitStr)+80;
+    chenarVolt.y1=y-H/2+padding+250-5;
+    chenarVolt.x2=x-L/2+padding+textwidth(unitStr)+25+5+85;
+    chenarVolt.y2=y-H/2+padding+250+25;
+
+
+    chenarButon.x1=x-LATIME_BUTON_SALVARE/2;
+    chenarButon.y1=y+H/4;
+    chenarButon.x2=x+LATIME_BUTON_SALVARE/2;
+    chenarButon.y2=y+H/4+INALTIME_BUTON_SALVARE;
+
+
+    chenarX.x1=(LATIME_ECRAN-LATIME_MODAL)/2+LATIME_MODAL-30;
+    chenarX.y1=(INALTIME_ECRAN-INALTIME_MODAL)/2+10;
+    chenarX.x2=chenarX.x1+textwidth("x");
+    chenarX.y2=chenarX.y1+textheight("x");
+
+    chenarNume.x1=x-L/2+padding;
+    chenarNume.y1=y-H/2+padding+50;
+    chenarNume.x2=(LATIME_ECRAN+LATIME_MODAL)/2;
+    chenarNume.y2=chenarNume.y1+textheight(numeStr);
+
+    chenarValoare.x1=x-L/2+padding;
+    chenarValoare.y1=y-H/2+padding+150;
+    chenarValoare.x2=(LATIME_ECRAN+LATIME_MODAL)/2;
+    chenarValoare.y2=chenarValoare.y1+textheight(valStr);
+
+}
+void chenar (int x1, int y1, int x2, int y2, int grosime, int bkcolor, int framecolor)
+{
+    setfillstyle(SOLID_FILL,bkcolor);
+    setcolor(framecolor);
+    bar(x1,y1,x2,y2);
+    for (int i=0; i<grosime; ++i)
+        rectangle(x1+i,y1+i,x2-i,y2-i);
 }
 void desenare_piesa (piesa P, int CULOARE)
 {
@@ -313,7 +443,7 @@ void desenare_piesa (piesa P, int CULOARE)
     int index=P.index;
     int orientare=P.orientare;
     setbkcolor(BLACK);
-    setcolor(CULOARE);
+    setcolor(CULOARE_FIGURA);
     for (int i=0; i<figuri[index].nr_bucati; ++i)
     {
         char type=figuri[index].tip_bucata[i];
@@ -340,6 +470,7 @@ void desenare_piesa (piesa P, int CULOARE)
             rectangle(x+a,y+b,x+c,y+d);
         }
     }
+    //desenare_caracteristici(P);
 }
 void myIntrari(int orientare, int index, int i, int &a, int &b)
 {
@@ -478,21 +609,10 @@ void desenare_legaturi()
                 {
                     for(int u=0; u<MAX_INTRARI; ++u)
                         if(graf[i][j].intrari[k][u]==1)
-                            drawLine(piese[i].intrari[k].x, piese[i].intrari[k].y, piese[j].intrari[u].x, piese[j].intrari[u].y , RED);
+                            drawLine(piese[i].intrari[k].x, piese[i].intrari[k].y, piese[j].intrari[u].x, piese[j].intrari[u].y , CULOARE_LEGATURI);
                 }
         }
     }
-}
-void redraw()
-{
-    setbkcolor(BLACK);
-    DeseneazaBaraDeIteme();
-    DeseneazaBaraDeTools();
-    desenare_legaturi();
-   // if (piesaPeCursor)
-     //   desenare_piesa_cursor();
-    for (int i=0; i<=nrPiese; ++i)
-        {int CULOARE=COLOR(255,255,51); desenare_piesa(piese[i], CULOARE);}
 }
 void AnimareChenar (int state)
 {
@@ -630,7 +750,7 @@ void trasare_legatura()
             golire_ecran();
             redraw();
             desenare_intrari(WHITE);
-            drawLine(piese[Index_01].intrari[Index_intrare_01].x,piese[Index_01].intrari[Index_intrare_01].y,x,y,RED);
+            drawLine(piese[Index_01].intrari[Index_intrare_01].x,piese[Index_01].intrari[Index_intrare_01].y,x,y,CULOARE_LEGATURI);
             delay(REFRESH_RATE);
         }
         int previous_x=-1, previous_y=-1;
@@ -650,7 +770,7 @@ void trasare_legatura()
             {
                 cout<<"Nodul al doilea a fost identificat la: Index "<<Index_02<< ", Intrare "<<Index_intrare_02<<endl;
 
-
+                graf[Index_02][Index_01].intrari[Index_intrare_02][Index_intrare_01]=1;
                 graf[Index_01][Index_02].intrari[Index_intrare_01][Index_intrare_02]=1;
                 modificari[q=++p]={vector<int>{4},vector<piesa>{}};
                 legaturi_modificate[p]={{Index_01,Index_02,Index_intrare_01,Index_intrare_02}};
@@ -662,7 +782,7 @@ void trasare_legatura()
                     redraw();
                 }
                 else
-                    drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,RED);
+                    drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,CULOARE_LEGATURI);
                 break;
             }
             else if(Index_02==-1 && Index_intrare_02==-1) ///I.e daca x si y nu se intersercteaza cu o piesa sau o intrare de pe tabla
@@ -677,6 +797,9 @@ void trasare_legatura()
                     piese[++nrPiese]=piesaNoua;
                     Index_02=nrPiese; Index_intrare_02=0;
                     graf[Index_01][Index_02].intrari[Index_intrare_01][Index_intrare_02]=1;
+                    graf[Index_02][Index_01].intrari[Index_intrare_02][Index_intrare_01]=1;
+                    modificari[q=++p]={{4},{}};
+                    legaturi_modificate[p]={{Index_01,Index_02,Index_intrare_01,Index_intrare_02}};
                     if(previousIntrare>=0 && previousPiesa>=0)
                     {
                         graf[Index_01][previousPiesa].intrari[Index_intrare_01][previousIntrare]=0;
@@ -684,7 +807,7 @@ void trasare_legatura()
                         redraw();
                     }
                     else
-                        drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,RED);
+                        drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,CULOARE_LEGATURI);
 
                 }
                 else
@@ -698,7 +821,7 @@ void trasare_legatura()
         {
             int x=mousex();
             int y=mousey();
-            drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y, x, y, RED);
+            drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y, x, y, CULOARE_LEGATURI);
             if(previous_x!=-1 && previous_y!=-1)
             {
                 drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y, previous_x, previous_y, BLACK);
@@ -706,6 +829,216 @@ void trasare_legatura()
             previous_x=x; previous_y=y;
         }*/
     }
+}
+void modal (piesa &P)
+{
+    generare_coordonate_chenare();
+    int x=LATIME_ECRAN/2;
+    int y=INALTIME_ECRAN/2;
+    int L=LATIME_MODAL;
+    int H=INALTIME_MODAL;
+    chenar(chenarModal.x1,chenarModal.y1,chenarModal.x2,chenarModal.y2,5,BKMODAL,GREEN);
+    int padding=30;
+    int COLOR_NA=YELLOW;
+    int COLOR_A=COLOR(238, 75, 43);
+
+    char *numeStr="Nume:";
+    char *valStr="Valoare:";
+    char *unitStr="Unitate masura:";
+    settextstyle(DEFAULT_FONT,0,3);
+    setcolor(COLOR_NA);
+    setbkcolor(BKMODAL);
+    if (campActiv==0) setcolor(COLOR_A);
+    outtextxy(chenarNume.x1,chenarNume.y1,numeStr);
+        outtextxy(chenarNume.x1+textwidth(numeStr)+5,chenarNume.y1,P.nume);
+    if (campActiv==0) setcolor(COLOR_NA);
+    if (campActiv==1) setcolor(COLOR_A);
+    outtextxy(chenarValoare.x1,chenarValoare.y1,valStr);
+        outtextxy(chenarValoare.x1+textwidth(valStr)+5,chenarValoare.y1,P.valoare);
+    if (campActiv==1) setcolor(COLOR_NA);
+
+
+    outtextxy(x-L/2+padding,y-H/2+padding+250,unitStr);
+       // outtextxy(x-L/2+padding+textwidth(unitStr)+5,y-H/2+padding+250,nume);
+
+    int optionBk=BKMODAL;
+    if (P.unit==0) optionBk=selectionColor;
+    chenar(chenarOhm.x1,chenarOhm.y1,chenarOhm.x2,chenarOhm.y2,2,optionBk,GREEN);
+    drawOmega(x-L/2+padding+textwidth(unitStr)+15,y-H/2+padding+250+10,10,0);
+    if (P.unit==0) optionBk=BKMODAL;
+    if (P.unit==1) optionBk=selectionColor;
+    chenar(chenarAmp.x1,chenarAmp.y1,chenarAmp.x2,chenarAmp.y2,2,optionBk,GREEN);
+    setcolor(unitColor);
+    setbkcolor(optionBk);
+    outtextxy(x-L/2+padding+textwidth(unitStr)+45,y-H/2+padding+250,"A");
+    if (P.unit==1) optionBk=BKMODAL;
+    if (P.unit==2) optionBk=selectionColor;
+    chenar(chenarVolt.x1,chenarVolt.y1,chenarVolt.x2,chenarVolt.y2,2,optionBk,GREEN);
+    setcolor(unitColor);
+    setbkcolor(optionBk);
+    outtextxy(x-L/2+padding+textwidth(unitStr)+85,y-H/2+padding+250,"V");
+    if (P.unit==2) optionBk=BKMODAL;
+
+
+    //buton salvare
+    char *salvareStr="Salvare";
+    chenar(chenarButon.x1,chenarButon.y1,chenarButon.x2,chenarButon.y2,3,LIGHTGRAY,GREEN);
+    setcolor(GREEN);
+    setbkcolor(LIGHTGRAY);
+    settextstyle(0,0,4);
+    outtextxy((chenarButon.x1+chenarButon.x2)/2-textwidth(salvareStr)/2,(chenarButon.y1+chenarButon.y2)/2-textheight(salvareStr)/2,salvareStr);
+
+    //x
+    settextstyle(1,0,3);
+    setcolor(WHITE);
+    setbkcolor(BKMODAL);
+    outtextxy(chenarX.x1,chenarX.y1,"x");
+}
+void rename()
+{
+
+}
+void redraw()
+{
+    setbkcolor(BLACK);
+    DeseneazaBaraDeIteme();
+    DeseneazaBaraDeTools();
+    desenare_legaturi();
+   // if (piesaPeCursor)
+     //   desenare_piesa_cursor();
+    for (int i=0; i<=nrPiese; ++i)
+    {
+        int CULOARE=COLOR(255,255,51);
+        desenare_piesa(piese[i], CULOARE);
+        desenare_caracteristici(piese[i]);
+    }
+}
+void citire_modal (piesa &P)
+{
+    campActiv=-1;
+
+    int x=LATIME_ECRAN/2;
+    int y=INALTIME_ECRAN/2;
+    int L=LATIME_MODAL;
+    int H=INALTIME_MODAL;
+    int padding=30;
+    int COLOR_A=COLOR(238, 75, 43);
+    int COLOR_NA=YELLOW;
+
+    char *numeStr="Nume:";
+    char *valStr="Valoare:";
+    char *unitStr="Unitate masura:";
+
+    char ch='A';
+    char copieNume[100];
+    int copieUnit=P.unit;
+    char copieVal[100];
+    strcpy(copieVal,P.valoare);
+    strcpy(copieNume,P.nume);
+
+
+    while (1)
+    {
+        if (ismouseclick(WM_LBUTTONDOWN))
+        {
+            int x=mousex();
+            int y=mousey();
+            clearmouseclick(WM_LBUTTONDOWN);
+            if (inchenar(x,y,chenarNume))
+            {
+                cout<<chenarNume.x2<<" "<<chenarNume.y2<<'\n'<<chenarValoare.x2<<" "<<chenarValoare.y2<<'\n';
+                int n=strlen(P.nume);
+                campActiv=0;
+                    golire_ecran();
+                    redraw();
+                    modal(P);
+                char ch='A';
+                while (true)
+                {
+                    ch=getch();
+                    if (ch=='\r') break;
+                    else if (ch=='\b')
+                    {
+                        if (n>0)
+                        {
+                            n--;
+                            P.nume[n]='\0';
+                        }
+                    }
+                    else{
+                        P.nume[n++]=ch;
+                        P.nume[n]='\0';
+                    }
+                    golire_ecran();
+                    redraw();
+                    modal(P);
+                    delay(REFRESH_RATE);
+                }
+                campActiv=-1;
+            }
+            else if (inchenar(x,y,chenarValoare))
+            {
+                int n=strlen(P.valoare);
+                campActiv=1;
+                    golire_ecran();
+                    redraw();
+                    modal(P);
+                char ch='A';
+                while (true)
+                {
+                    ch=getch();
+                    if (ch=='\r') break;
+                    else if (ch=='\b')
+                    {
+                        if (n>0)
+                        {
+                            n--;
+                            P.valoare[n]='\0';
+                        }
+                    }
+                    else{
+                        P.valoare[n++]=ch;
+                        P.valoare[n]='\0';
+                    }
+                    golire_ecran();
+                    redraw();
+                    modal(P);
+                    delay(REFRESH_RATE);
+                }
+                campActiv=-1;
+            }
+            else if (inchenar(x,y,chenarOhm))
+            {
+                P.unit=0;
+            }
+            else if (inchenar(x,y,chenarAmp))
+            {
+                P.unit=1;
+            }
+            else if (inchenar(x,y,chenarVolt))
+            {
+                P.unit=2;
+            }
+            else if (inchenar(x,y,chenarButon))
+            {
+                //salvare
+                return;
+            }
+            if (inchenar(x,y,chenarX) || !inchenar(x,y,chenarModal))
+            {
+                strcpy(P.nume,copieNume);
+                strcpy(P.valoare,copieVal);
+                P.unit=copieUnit;
+                return;
+            }
+        }
+        setfillstyle(1,BLACK);
+        bar(chenarModal.x1,chenarModal.y1,chenarModal.x2,chenarModal.y2);
+        modal(P);
+        delay(REFRESH_RATE);
+    }
+
+
 }
 int cauta_piesa()
 {
@@ -733,15 +1066,21 @@ void stergere_piesa()
                     /*
                     adaug intr o noua structura legaturile pe care le sterg
                     */
-                    if (graf[i][j].intrari[e][f])
+                    if (graf[i][j].intrari[e][f]){
                         legaturi_modificate[p].push_back({i,j,e,f});
-                    graf[i][j].intrari[e][f]=graf[nrPiese][j].intrari[e][f];
-                    graf[nrPiese][j].intrari[e][f]=0;
-                    if (graf[j][i].intrari[e][f])
-                        legaturi_modificate[p].push_back({j,i,e,f});
-                    graf[j][i].intrari[e][f]=graf[j][nrPiese].intrari[e][f];
-                    graf[j][nrPiese].intrari[e][f]=0;
+                        legaturi_modificate[p].push_back({j,i,f,e});
+                    }
+                }
+        for (int j=0; j<=nrPiese; ++j)
+            for (int e=0; e<MAX_INTRARI; ++e)
+                for (int f=0; f<MAX_INTRARI; ++f)
+                {
+                    graf[i][j].intrari[e][f]=graf[nrPiese][j].intrari[e][f]; //mutam legatura nrPiese pe pozitia i
+                    graf[nrPiese][j].intrari[e][f]=0; //stergem ce era pe pozitia nrPiese
 
+
+                    graf[j][i].intrari[f][e]=graf[j][nrPiese].intrari[f][e];
+                    graf[j][nrPiese].intrari[f][e]=0;
                 }
         piese[i]=piese[nrPiese--];
         cout<<"Piesa stearsa este"<<i<<"\n";
@@ -853,6 +1192,7 @@ void plasare_piesa_noua(int Item_Selectat)
 void erase_all()
 {
     modificari[q=++p]={{6,nrPiese},{}};
+    legaturi_modificate[p].resize(0);
     for (int i=0; i<=nrPiese; ++i)
         for (int j=0; j<=nrPiese; ++j)
             for (int e=0; e<MAX_INTRARI; ++e)
@@ -888,10 +1228,16 @@ void undo()
                 piese[poz]=piesaVeche;
                 for (int j=0; j<=nrPiese; ++j)
                     for (int e=0; e<MAX_INTRARI; ++e)
-                        for (int f=0;f<MAX_INTRARI; ++f)
+                        for (int f=0;f<MAX_INTRARI; ++f){
                             graf[nrPiese][j].intrari[e][f]=graf[poz][j].intrari[e][f];
-                for (auto e:legaturi_modificate[p])
+                            graf[poz][j].intrari[e][f]=0;
+                            graf[j][nrPiese].intrari[e][f]=graf[j][poz].intrari[e][f];
+                            graf[j][poz].intrari[e][f]=0;
+                        }
+                for (auto e:legaturi_modificate[p]){
                     graf[e[0]][e[1]].intrari[e[2]][e[3]]=1;
+                    graf[e[1]][e[0]].intrari[e[3]][e[2]]=1;
+                }
                 break;
             case 2://piesa mutata
             case 3: //piesa rotita
@@ -907,14 +1253,17 @@ void undo()
                 int i1=legaturi_modificate[p][0][2];
                 int i2=legaturi_modificate[p][0][3];
                 graf[p1][p2].intrari[i1][i2]=0;
+                graf[p2][p1].intrari[i2][i1]=0;
                 break;
             }
             case 5: //stergere legatura
                 break;
             case 6://sterge tot
                 nrPiese=poz;
-                for (auto e:legaturi_modificate[p])
+                for (auto e:legaturi_modificate[p]){
                     graf[e[0]][e[1]].intrari[e[2]][e[3]]=1;
+                    graf[e[1]][e[0]].intrari[e[3]][e[2]]=1;
+                }
                 break;
         }
         p--;
@@ -963,14 +1312,17 @@ void redo()
                 int i1=legaturi_modificate[p][0][2];
                 int i2=legaturi_modificate[p][0][3];
                 graf[p1][p2].intrari[i1][i2]=1;
+                graf[p2][p1].intrari[i2][i1]=1;
                 break;
             }
             case 5: //stergere legatura
                 break;
             case 6://sterge tot
                 nrPiese=-1;
-                for (auto e:legaturi_modificate[p])
+                for (auto e:legaturi_modificate[p]){
                     graf[e[0]][e[1]].intrari[e[2]][e[3]]=0;
+                    graf[e[1]][e[0]].intrari[e[3]][e[2]]=0;
+                }
                 break;
         }
     }
@@ -1025,6 +1377,7 @@ void Tool_Cases(int index)
             return;
     }
 }
+//trb terminata functia pt desenare meniu caracteristici, trb terminata functia de desenare la caracteristicile piesei
 int main()
 {
     citire_figuri();
@@ -1032,6 +1385,7 @@ int main()
     ///drawing the Toolbar and ItemMenu
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
+
 
     /// Initializing the main() variables
     int Tool_Selectat = -1;
@@ -1063,6 +1417,11 @@ int main()
                 cout << "Numarul itemului selectat " << Item_Selectat << endl;
 
                 Item_Selectat=-1;
+            }
+            else {
+                int index=index_figura_apasata(x,y);
+                citire_modal(piese[index]);
+
             }
 
         }
