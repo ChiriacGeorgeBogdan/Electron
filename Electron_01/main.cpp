@@ -269,7 +269,7 @@ bool seIntersecteaza (piesa a, piesa b)
 }
 bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
 {
-    for (int i=0; i<nrPiese; ++i)
+    for (int i=0; i<=nrPiese; ++i)
     {
         //verificam daca se intersecteaza cu alte piese
         if (seIntersecteaza(piesaNoua,piese[i]))
@@ -368,7 +368,7 @@ void desenare_caracteristici (piesa P)
         outtextxy(P.x1-textheight(nume)-gap,yc+textwidth(nume)/2,nume);
         outtextxy(P.x2+gap,yc+textwidth(val)/2,val);
         if (unit==0)
-            drawOmega(P.x2+gap+12,yc-textwidth(val)/2-15,7,1);
+            drawOmega(P.x2+gap+10,yc-textwidth(val)/2-15,7,1);
         else if (unit==1)
             outtextxy(P.x2+gap,yc-textwidth(val)/2,"A");
         else if (unit==2)
@@ -480,7 +480,7 @@ void desenare_piesa (piesa P, int CULOARE)
     int index=P.index;
     int orientare=P.orientare;
     setbkcolor(BLACK);
-    setcolor(CULOARE_FIGURA);
+    setcolor(CULOARE);
     for (int i=0; i<figuri[index].nr_bucati; ++i)
     {
         char type=figuri[index].tip_bucata[i];
@@ -940,9 +940,9 @@ void redraw()
     desenare_legaturi();
    // if (piesaPeCursor)
      //   desenare_piesa_cursor();
+    int CULOARE=COLOR(255,255,51);
     for (int i=0; i<=nrPiese; ++i)
     {
-        int CULOARE=COLOR(255,255,51);
         desenare_piesa(piese[i], CULOARE);
         desenare_caracteristici(piese[i]);
     }
@@ -1168,6 +1168,7 @@ void mutare_piesa ()
         int y=mousey();
         piese[i].x=x;
         piese[i].y=y;
+        incadrare_PiesaModificata(piese[i]);
         calcul_intrari(piese[i]);
 
         if (ismouseclick(WM_LBUTTONDOWN))
@@ -1175,6 +1176,7 @@ void mutare_piesa ()
             int x=mousex();
             int y=mousey();
             clearmouseclick(WM_LBUTTONDOWN);
+            piese[i]=piesaInitiala;
             piesa copiePiesa=piesaInitiala;
             copiePiesa.x=x;
             copiePiesa.y=y;
@@ -1209,6 +1211,7 @@ void plasare_piesa_noua(int Item_Selectat)
         int y=mousey();
         piese[nrPiese].x=x;
         piese[nrPiese].y=y;
+        incadrare(piese[nrPiese],x,y,Item_Selectat);
         golire_ecran();
         redraw();
         delay(REFRESH_RATE);
@@ -1217,10 +1220,13 @@ void plasare_piesa_noua(int Item_Selectat)
     int y=mousey();
     clearmouseclick(WM_LBUTTONDOWN);
     incadrare(piese[nrPiese],x,y,Item_Selectat);
-    if (!sePoateDesena(piese[nrPiese],x,y,Item_Selectat))
-        nrPiese--;
-    else
+    piesa copiePiesa=piese[nrPiese--];
+    if (!sePoateDesena(copiePiesa,x,y,Item_Selectat))
+        ;
+    else{
+        piese[++nrPiese]=copiePiesa;
         modificari[q=++p]=make_pair(vector<int>{0,nrPiese},vector<piesa>{piese[nrPiese]});
+    }
 
 }
 void erase_all()
