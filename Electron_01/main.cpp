@@ -312,52 +312,89 @@ void golire_ecran ()
     bar(LATIME_TOOLBAR+1,INALTIMEA_BAREI_DE_ITEME+1,LATIME_ECRAN,INALTIME_ECRAN);
 }
 
-
 char nume[100];
 int unit=-1;
 int selectionColor=COLOR(255,255,153);
-int unitColor=GREEN;
+int unitColor=WHITE;
 int campActiv=-1;
 void drawOmega(int x, int y, int radius, int dir)
 {
     setcolor(unitColor);
     arc(x, y, dir*90, (240+dir*90)%360 , radius);
     arc(x, y, (300 + dir*90)%360, (360+dir*90)%360, radius);
-    line(x-radius,y+radius,x-radius/2+1,y+radius);
-    line(x+radius,y+radius,x+radius/2-1,y+radius);
+    if (dir==0){
+        line(x-radius,y+radius,x-radius/2+1,y+radius);
+        line(x+radius,y+radius,x+radius/2-1,y+radius);
+    }
+    else if (dir==1){
+        line(x+radius,y+radius,x+radius,y+radius/2);
+        line(x+radius,y-radius,x+radius,y-radius/2);
+    }
+    else if (dir==2){
+        line(x-radius,y-radius,x-radius/2+1,y-radius);
+        line(x+radius,y-radius,x+radius/2-1,y-radius);
+    }
+    else if (dir==3){
+        line(x-radius,y+radius,x-radius,y+radius/2);
+        line(x-radius,y-radius,x-radius,y-radius/2);
+    }
 }
 void desenare_caracteristici (piesa P)
 {
     char *nume=P.nume;
     int unit=P.unit;
-    char val[10];
+    char val[30];
     strcpy(val,P.valoare);
     int xc=(P.x1+P.x2)/2;
     int yc=(P.y1+P.y2)/2;
+    int gap=10;
 
     setcolor(WHITE);
     setbkcolor(BLACK);
-    settextstyle(DEFAULT_FONT,P.orientare,1);
+    settextstyle(1,P.orientare,1);
     if (P.orientare==0)
     {
-        outtextxy(xc-textwidth(nume)/2,P.y1-textheight(nume),nume);
-        outtextxy(xc-textwidth(val)/2,P.y2,val);
+        outtextxy(xc-textwidth(nume)/2,P.y1-textheight(nume)-10,nume);
+        outtextxy(xc-textwidth(val)/2,P.y2+10,val);
         if (unit==0)
-            drawOmega(xc+textwidth(val)/2,P.y2,4,0);
+            drawOmega(xc+textwidth(val)/2+10,P.y2+5+gap,7,0);
+        else if (unit==1)
+            outtextxy(xc+textwidth(val)/2,P.y2+gap,"A");
+        else if (unit==2)
+            outtextxy(xc+textwidth(val)/2,P.y2+gap,"V");
     }
     else if (P.orientare==1)
     {
-        outtextxy(P.x1-textheight(nume),yc-textwidth(nume)/2,nume);
-        outtextxy(P.x2,yc-textwidth(val)/2,val);
-
+        outtextxy(P.x1-textheight(nume)-gap,yc+textwidth(nume)/2,nume);
+        outtextxy(P.x2+gap,yc+textwidth(val)/2,val);
+        if (unit==0)
+            drawOmega(P.x2+gap+12,yc-textwidth(val)/2-15,7,1);
+        else if (unit==1)
+            outtextxy(P.x2+gap,yc-textwidth(val)/2,"A");
+        else if (unit==2)
+            outtextxy(P.x2+gap,yc-textwidth(val)/2,"V");
     }
     else if (P.orientare==2)
     {
-
+        outtextxy(xc+textwidth(nume)/2,P.y2+gap+textheight(nume),nume);
+        outtextxy(xc+textwidth(val)/2,P.y1-gap,val);
+        if (unit==0)
+            drawOmega(xc-textwidth(val)/2-12,P.y1-gap-10,7,2);
+        else if (unit==1)
+            outtextxy(xc-textwidth(val)/2,P.y1-gap,"A");
+        else if (unit==2)
+            outtextxy(xc-textwidth(val)/2,P.y1-gap,"V");
     }
     else if (P.orientare==3)
     {
-
+        outtextxy(P.x2+textheight(nume)+gap,yc-textwidth(nume)/2,nume);
+        outtextxy(P.x1-gap,yc-textwidth(val)/2,val);
+        if (unit==0)
+            drawOmega(P.x1-gap-10,yc+textwidth(val)/2+12,7,3);
+        else if (unit==1)
+            outtextxy(P.x1-gap,yc+textwidth(val)/2,"A");
+        else if (unit==2)
+            outtextxy(P.x1-gap,yc+textwidth(val)/2,"V");
     }
 }
 
@@ -501,6 +538,7 @@ void calcul_intrari(piesa &piesaNoua)
 }
 void incadrare (piesa& piesaNoua, int x, int y, int index)
 {
+    piesaNoua.unit=-1;
     piesaNoua.orientare=0;
     piesaNoua.x1=piesaNoua.y1=9999;
     piesaNoua.x2=piesaNoua.y2=0;
@@ -893,10 +931,6 @@ void modal (piesa &P)
     setcolor(WHITE);
     setbkcolor(BKMODAL);
     outtextxy(chenarX.x1,chenarX.y1,"x");
-}
-void rename()
-{
-
 }
 void redraw()
 {
@@ -1418,16 +1452,16 @@ int main()
 
                 Item_Selectat=-1;
             }
-            else {
-                int index=index_figura_apasata(x,y);
-                citire_modal(piese[index]);
-
-            }
 
         }
         if (ismouseclick(WM_RBUTTONDOWN))
         {
-
+            int x=mousex();
+            int y=mousey();
+            clearmouseclick(WM_RBUTTONDOWN);
+            int index=index_figura_apasata(x,y);
+            if (index!=-1)
+                citire_modal(piese[index]);
         }
         delay(REFRESH_RATE);
         golire_ecran();
