@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <fstream>
 #include <vector>
+#include <cstring>
 
 
 #define FUNDAL 0
@@ -105,6 +106,7 @@ struct grafuri{
 //Stiva modificarilor
 pair<vector<int>, vector<piesa> >modificari[1000];
 vector<vector<int> >legaturi_modificate[1000];
+vector<vector<char> >caracteristici_modificate[1000];
 int p=-1,q=-1;
 
 
@@ -947,7 +949,20 @@ void redraw()
         desenare_caracteristici(piese[i]);
     }
 }
-void citire_modal (piesa &P)
+void copiereCuvant (vector<char>&V, char *W)
+{
+    V.resize(strlen(W)+1);
+    for (int i=0; i<=strlen(W); ++i)
+        V[i]=W[i];
+}
+void copiereCuvant (char *V, vector<char>W)
+{
+    int i=0;
+    for (; W[i]!='\0'; ++i)
+        V[i]=W[i];
+    V[i]='\0';
+}
+void citire_modal (piesa &P, int indice_piesa)
 {
     campActiv=-1;
 
@@ -1056,9 +1071,26 @@ void citire_modal (piesa &P)
             else if (inchenar(x,y,chenarButon))
             {
                 //salvare
+                if (!(strcmp(copieNume,P.nume)==0 && strcmp(copieVal,P.valoare)==0 && P.unit==copieUnit))
+                {
+                    modificari[q=++p]={{7,indice_piesa, copieUnit,P.unit},{}};
+                    caracteristici_modificate[q].clear();
+                    caracteristici_modificate[q].resize(4);
+                    for (int i=0; i<4; ++i)
+                        caracteristici_modificate[q][i].resize(50);
+                    /*
+                    caracteristici_modificate[q][0].assign(copieNume,copieNume+strlen(copieNume)+1);
+                    caracteristici_modificate[q][1].assign(P.nume,P.nume+strlen(P.nume)+1);
+                    caracteristici_modificate[q][2].assign(copieVal,copieVal+strlen(copieVal)+1);
+                    caracteristici_modificate[q][3].assign(P.valoare,P.valoare+strlen(P.valoare)+1);*/
+                    copiereCuvant(caracteristici_modificate[q][0],copieNume);
+                    copiereCuvant(caracteristici_modificate[q][1],P.nume);
+                    copiereCuvant(caracteristici_modificate[q][2],copieVal);
+                    copiereCuvant(caracteristici_modificate[q][3],P.valoare);
+                }
                 return;
             }
-            if (inchenar(x,y,chenarX) || !inchenar(x,y,chenarModal))
+            else if (inchenar(x,y,chenarX) || !inchenar(x,y,chenarModal))
             {
                 strcpy(P.nume,copieNume);
                 strcpy(P.valoare,copieVal);
@@ -1159,7 +1191,8 @@ void mutare_piesa ()
 
     AsteptareSelectie();
     int i=cauta_piesa();
-    // piesaPeCursor=i;
+    //piesaActiva=i;
+
     piesa piesaInitiala=piese[i];
     clearmouseclick(WM_LBUTTONDOWN);
     while (true && i!=-1)
@@ -1194,7 +1227,8 @@ void mutare_piesa ()
         redraw();
         delay(REFRESH_RATE);
     }
-   // piesaPeCursor=-1;
+
+   // piesaActiva=-1;
     golire_ecran();
     redraw();
 }
@@ -1204,6 +1238,9 @@ void plasare_piesa_noua(int Item_Selectat)
     piese[++nrPiese].index=Item_Selectat;
     piese[nrPiese].orientare=0;
     piese[nrPiese].zoom=1;
+    piese[nrPiese].nume[0]='\0';
+    piese[nrPiese].valoare[0]='\0';
+   // piesaActiva=nrPiese;
     //asteptam plasarea
     while (!ismouseclick(WM_LBUTTONDOWN))
     {
@@ -1227,6 +1264,7 @@ void plasare_piesa_noua(int Item_Selectat)
         piese[++nrPiese]=copiePiesa;
         modificari[q=++p]=make_pair(vector<int>{0,nrPiese},vector<piesa>{piese[nrPiese]});
     }
+    //piesaActiva=-1;
 
 }
 void erase_all()
@@ -1255,7 +1293,7 @@ void undo()
         int caz=modificari[p].first[0];
         int poz=modificari[p].first[1];
         piesa piesaVeche;
-        if (caz!=4 && caz!=6) piesaVeche=modificari[p].second[0];
+        if (caz!=4 && caz!=6 && caz!=7) piesaVeche=modificari[p].second[0];
         piesa piesaNoua;
         if (caz==2 || caz==3) piesaNoua=modificari[p].second[1];
         switch(caz)
@@ -1305,6 +1343,12 @@ void undo()
                     graf[e[1]][e[0]].intrari[e[3]][e[2]]=1;
                 }
                 break;
+            case 7://redenumire
+                copiereCuvant(piese[poz].nume,caracteristici_modificate[p][0]);
+                copiereCuvant(piese[poz].valoare,caracteristici_modificate[p][2]);
+
+                piese[poz].unit=modificari[p].first[2];
+                break;
         }
         p--;
     }
@@ -1317,7 +1361,7 @@ void redo()
         int caz=modificari[p].first[0];
         int poz=modificari[p].first[1];
         piesa piesaVeche;
-        if (caz!=4 && caz!=6) piesaVeche=modificari[p].second[0];
+        if (caz!=4 && caz!=6 && caz!=7) piesaVeche=modificari[p].second[0];
         piesa piesaNoua;
         if (caz==2 || caz==3) piesaNoua=modificari[p].second[1];
         switch(caz)
@@ -1363,6 +1407,12 @@ void redo()
                     graf[e[0]][e[1]].intrari[e[2]][e[3]]=0;
                     graf[e[1]][e[0]].intrari[e[3]][e[2]]=0;
                 }
+                break;
+            case 7://redenumire
+                copiereCuvant(piese[poz].nume,caracteristici_modificate[p][1]);
+                copiereCuvant(piese[poz].valoare,caracteristici_modificate[p][3]);
+
+                piese[poz].unit=modificari[p].first[3];
                 break;
         }
     }
@@ -1467,7 +1517,7 @@ int main()
             clearmouseclick(WM_RBUTTONDOWN);
             int index=index_figura_apasata(x,y);
             if (index!=-1)
-                citire_modal(piese[index]);
+                citire_modal(piese[index],index);
         }
         delay(REFRESH_RATE);
         golire_ecran();
