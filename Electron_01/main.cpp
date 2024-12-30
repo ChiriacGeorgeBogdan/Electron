@@ -29,6 +29,8 @@ const int MAX_INTRARI = 3;
 const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Increase","Decrease","Erase Shape", "Erase All", "Undo", "Redo"};
 const char Item_Labels[NR_ITEME][15]= {"Shape 1"};
 
+bool buffer=0;
+
 //fisierele si structura aferenta figurilor
 const char fisiere[20][15]= {"AMPLOP.PS","BATERIE.PS","CONDENS.PS","DIODA.PS","NOD.PS","POLARIZ.PS","REZIST.PS","SERVOMOT.PS","SINU.PS","STOP.PS","TRANZNPN.PS","TRANZPNP.PS","ZENNER.PS"};
 struct figura
@@ -181,6 +183,27 @@ void myEllipse(int orientare, int index, int i, int &a, int &b, int &c, int &d)
     c = figuri[index].marire * rx;
     d = figuri[index].marire * ry;
 }
+
+void myArc(int orientare, int index, int i, int &a, int &b, int &c, int &d)
+{
+    float x1 = figuri[index].bucati[i][0];
+    float y1 = figuri[index].bucati[i][1];
+    float rx = figuri[index].bucati[i][2];
+    float ry = figuri[index].bucati[i][3];
+
+    float x1_nou = x1, y1_nou = y1;
+
+    for (int j = 0; j < orientare; ++j)
+    {
+        roteste(x1_nou, y1_nou, x1_nou, y1_nou);
+        swap(rx, ry);
+    }
+
+    a = figuri[index].marire * x1_nou;
+    b = figuri[index].marire * y1_nou;
+    c = figuri[index].marire * rx;
+    d = figuri[index].marire * ry;
+}
 /// Deseneaza Bara de Iteme/Piese
 void DeseneazaBaraDeIteme()
 {
@@ -223,6 +246,10 @@ void DeseneazaBaraDeIteme()
             else if (type == 'R')
             {
                 rectangle(x + a, y + b, x + c, y + d);
+            }
+            else if (type == 'A')
+            {
+                arc(x + a, y + b, 270, 90, c+d+0.5);
             }
         }
     }
@@ -293,7 +320,7 @@ bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
             if (!(estePeTabla(x+a,y+b) && estePeTabla(x+c,y+d)))
                 return false;
         }
-        else if (type=='O')
+        else if (type=='O' || type=='A')
         {
             if (!(estePeTabla(x+a-c,y+b-d) && estePeTabla(x+a+c,y+b-d) && estePeTabla(x+a-c,y+b-d) && estePeTabla(x+a+c,y+b+d)))
                 return false;
@@ -508,6 +535,11 @@ void desenare_piesa (piesa P, int CULOARE)
             myRectangle(orientare, index, i, a, b, c, d);
             rectangle(x+a,y+b,x+c,y+d);
         }
+        else if (type=='A')
+        {
+            myArc(orientare, index, i, a, b, c, d);
+            arc(x+a, y+b, (270+orientare*90)%360, (90+orientare*90)%360, c+d);
+        }
     }
     //desenare_caracteristici(P);
 }
@@ -572,11 +604,66 @@ void incadrare (piesa& piesaNoua, int x, int y, int index)
             piesaNoua.x2=max(piesaNoua.x2,x+c);
             piesaNoua.y2=max(piesaNoua.y2,y+d);
         }
+        else if (type=='A')
+        {
+            piesaNoua.x1=min(piesaNoua.x1,x+a-c);
+            piesaNoua.y1=min(piesaNoua.y1,y+b-c);
+            piesaNoua.x2=max(piesaNoua.x2,x+a+c);
+            piesaNoua.y2=max(piesaNoua.y2,y+b+c);
+        }
     }
     piesaNoua.x=x;
     piesaNoua.y=y;
     piesaNoua.index=index;
     calcul_intrari(piesaNoua);
+}
+void drawLine(int x1, int y1, int x2, int y2, int cul)
+{
+    setcolor(cul);
+    line(x1, y1, (x1 + x2) / 2, y1);
+    line((x1 + x2) / 2, y1, (x1 + x2) / 2, y2);
+    line((x1 + x2) / 2, y2, x2, y2);
+}
+void desenare_legaturi()
+{
+    for(int i=0; i<=nrPiese; ++i)
+    {
+        for(int j=0; j<=nrPiese; ++j)
+        {
+                for(int k=0; k<MAX_INTRARI; ++k)
+                {
+                    for(int u=0; u<MAX_INTRARI; ++u)
+                        if(graf[i][j].intrari[k][u]==1)
+                            drawLine(piese[i].intrari[k].x, piese[i].intrari[k].y, piese[j].intrari[u].x, piese[j].intrari[u].y , CULOARE_LEGATURI);
+                }
+        }
+    }
+}
+void redraw()
+{
+    DeseneazaBaraDeIteme();
+    DeseneazaBaraDeTools();
+    setbkcolor(BLACK);
+    desenare_legaturi();
+   // if (piesaPeCursor)
+     //   desenare_piesa_cursor();
+    int CULOARE=COLOR(255,255,51);
+    for (int i=0; i<=nrPiese; ++i)
+    {
+        desenare_piesa(piese[i], CULOARE);
+        desenare_caracteristici(piese[i]);
+    }
+}
+
+void redraw_page()
+{
+    setvisualpage(buffer);
+	setactivepage(1 - buffer);
+	cleardevice();
+	redraw();
+	delay(REFRESH_RATE);
+	setvisualpage(1 - buffer);
+	buffer=1-buffer;
 }
 void incadrare_PiesaModificata(piesa& piesaVeche)
 {
@@ -616,6 +703,14 @@ void incadrare_PiesaModificata(piesa& piesaVeche)
             piesaVeche.x2=max(piesaVeche.x2,x+c);
             piesaVeche.y2=max(piesaVeche.y2,y+d);
         }
+        else if (type=='A')
+        {
+            myArc(orientare, index, i, a, b, c, d);
+            piesaVeche.x1=min(piesaVeche.x1,x+a-(c+d));
+            piesaVeche.y1=min(piesaVeche.y1,y+b-(c+d));
+            piesaVeche.x2=max(piesaVeche.x2,x+a+c+d);
+            piesaVeche.y2=max(piesaVeche.y2,y+b+c+d);
+        }
     }
     calcul_intrari(piesaVeche);
 }
@@ -631,29 +726,9 @@ int getToolIndex(int x, int y)
     int TOOLS_Inaltime = (INALTIME_ECRAN - INALTIMEA_BAREI_DE_ITEME) / NR_TOOLS;
     return (y - INALTIMEA_BAREI_DE_ITEME) / TOOLS_Inaltime;
 }
-void drawLine(int x1, int y1, int x2, int y2, int cul)
-{
-    setcolor(cul);
-    line(x1, y1, (x1 + x2) / 2, y1);
-    line((x1 + x2) / 2, y1, (x1 + x2) / 2, y2);
-    line((x1 + x2) / 2, y2, x2, y2);
-}
 
-void desenare_legaturi()
-{
-    for(int i=0; i<=nrPiese; ++i)
-    {
-        for(int j=0; j<=nrPiese; ++j)
-        {
-                for(int k=0; k<MAX_INTRARI; ++k)
-                {
-                    for(int u=0; u<MAX_INTRARI; ++u)
-                        if(graf[i][j].intrari[k][u]==1)
-                            drawLine(piese[i].intrari[k].x, piese[i].intrari[k].y, piese[j].intrari[u].x, piese[j].intrari[u].y , CULOARE_LEGATURI);
-                }
-        }
-    }
-}
+
+
 void AnimareChenar (int state)
 {
     setbkcolor(BLACK);
@@ -688,8 +763,8 @@ void desenare_intrari(int CULOARE)
 
 void stergere_intrari()
 {
-    desenare_intrari(FUNDAL);
-    redraw();
+    ///desenare_intrari(FUNDAL);
+    redraw_page();
 }
 
 bool mouse_se_intersecteaza_cu_piesa(int x, int y, piesa a)
@@ -787,11 +862,12 @@ void trasare_legatura()
         {
             int x=mousex();
             int y=mousey();
-            golire_ecran();
-            redraw();
+            ///golire_ecran();
+            ///redraw();
+            redraw_page();
             desenare_intrari(WHITE);
             drawLine(piese[Index_01].intrari[Index_intrare_01].x,piese[Index_01].intrari[Index_intrare_01].y,x,y,CULOARE_LEGATURI);
-            delay(REFRESH_RATE);
+            ///delay(REFRESH_RATE);
         }
         int previous_x=-1, previous_y=-1;
       //  if (ismouseclick(WM_LBUTTONDOWN))
@@ -818,8 +894,9 @@ void trasare_legatura()
                 if(previousIntrare>=0 && previousPiesa>=0)
                 {
                     graf[Index_01][previousPiesa].intrari[Index_intrare_01][previousIntrare]=0;
-                    cleardevice();
-                    redraw();
+                    redraw_page();
+                    ///cleardevice();
+                    ///redraw();
                 }
                 else
                     drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,CULOARE_LEGATURI);
@@ -843,8 +920,9 @@ void trasare_legatura()
                     if(previousIntrare>=0 && previousPiesa>=0)
                     {
                         graf[Index_01][previousPiesa].intrari[Index_intrare_01][previousIntrare]=0;
-                        cleardevice();
-                        redraw();
+                        redraw_page();
+                        ///cleardevice();
+                        ///redraw();
                     }
                     else
                         drawLine(piese[Index_01].intrari[Index_intrare_01].x, piese[Index_01].intrari[Index_intrare_01].y,piese[Index_02].intrari[Index_intrare_02].x,piese[Index_02].intrari[Index_intrare_02].y,CULOARE_LEGATURI);
@@ -872,6 +950,10 @@ void trasare_legatura()
 }
 void modal (piesa &P)
 {
+    //setvisualpage(buffer);
+	//setactivepage(1 - buffer);
+	//cleardevice();
+	//redraw();
     generare_coordonate_chenare();
     int x=LATIME_ECRAN/2;
     int y=INALTIME_ECRAN/2;
@@ -933,22 +1015,11 @@ void modal (piesa &P)
     setcolor(WHITE);
     setbkcolor(BKMODAL);
     outtextxy(chenarX.x1,chenarX.y1,"x");
+    //delay(REFRESH_RATE);
+	//setvisualpage(1 - buffer);
+	//buffer=1-buffer;
 }
-void redraw()
-{
-    setbkcolor(BLACK);
-    DeseneazaBaraDeIteme();
-    DeseneazaBaraDeTools();
-    desenare_legaturi();
-   // if (piesaPeCursor)
-     //   desenare_piesa_cursor();
-    int CULOARE=COLOR(255,255,51);
-    for (int i=0; i<=nrPiese; ++i)
-    {
-        desenare_piesa(piese[i], CULOARE);
-        desenare_caracteristici(piese[i]);
-    }
-}
+
 void copiereCuvant (vector<char>&V, char *W)
 {
     V.resize(strlen(W)+1);
@@ -964,6 +1035,7 @@ void copiereCuvant (char *V, vector<char>W)
 }
 void citire_modal (piesa &P, int indice_piesa)
 {
+
     campActiv=-1;
 
     int x=LATIME_ECRAN/2;
@@ -988,6 +1060,7 @@ void citire_modal (piesa &P, int indice_piesa)
 
     while (1)
     {
+
         if (ismouseclick(WM_LBUTTONDOWN))
         {
             int x=mousex();
@@ -998,8 +1071,9 @@ void citire_modal (piesa &P, int indice_piesa)
                 cout<<chenarNume.x2<<" "<<chenarNume.y2<<'\n'<<chenarValoare.x2<<" "<<chenarValoare.y2<<'\n';
                 int n=strlen(P.nume);
                 campActiv=0;
-                    golire_ecran();
-                    redraw();
+                    ///golire_ecran();
+                    ///redraw();
+                    redraw_page();
                     modal(P);
                 char ch='A';
                 while (true)
@@ -1018,8 +1092,9 @@ void citire_modal (piesa &P, int indice_piesa)
                         P.nume[n++]=ch;
                         P.nume[n]='\0';
                     }
-                    golire_ecran();
-                    redraw();
+                    ///golire_ecran();
+                    ///redraw();
+                    redraw_page();
                     modal(P);
                     delay(REFRESH_RATE);
                 }
@@ -1029,8 +1104,9 @@ void citire_modal (piesa &P, int indice_piesa)
             {
                 int n=strlen(P.valoare);
                 campActiv=1;
-                    golire_ecran();
-                    redraw();
+                    ///golire_ecran();
+                    ///redraw();
+                    redraw_page();
                     modal(P);
                 char ch='A';
                 while (true)
@@ -1049,8 +1125,9 @@ void citire_modal (piesa &P, int indice_piesa)
                         P.valoare[n++]=ch;
                         P.valoare[n]='\0';
                     }
-                    golire_ecran();
-                    redraw();
+                    ///golire_ecran();
+                    ///redraw();
+                    redraw_page();
                     modal(P);
                     delay(REFRESH_RATE);
                 }
@@ -1088,6 +1165,9 @@ void citire_modal (piesa &P, int indice_piesa)
                     copiereCuvant(caracteristici_modificate[q][2],copieVal);
                     copiereCuvant(caracteristici_modificate[q][3],P.valoare);
                 }
+                delay(REFRESH_RATE);
+                setvisualpage(1 - buffer);
+                buffer=1-buffer;
                 return;
             }
             else if (inchenar(x,y,chenarX) || !inchenar(x,y,chenarModal))
@@ -1095,13 +1175,25 @@ void citire_modal (piesa &P, int indice_piesa)
                 strcpy(P.nume,copieNume);
                 strcpy(P.valoare,copieVal);
                 P.unit=copieUnit;
+                delay(REFRESH_RATE);
+                setvisualpage(1 - buffer);
+                buffer=1-buffer;
                 return;
             }
+
         }
+        setvisualpage(buffer);
+        setactivepage(1 - buffer);
+        cleardevice();
+        redraw();
         setfillstyle(1,BLACK);
         bar(chenarModal.x1,chenarModal.y1,chenarModal.x2,chenarModal.y2);
         modal(P);
         delay(REFRESH_RATE);
+        delay(REFRESH_RATE);
+        setvisualpage(1 - buffer);
+        buffer=1-buffer;
+
     }
 
 
@@ -1151,8 +1243,9 @@ void stergere_piesa()
         piese[i]=piese[nrPiese--];
         cout<<"Piesa stearsa este"<<i<<"\n";
     }
-    golire_ecran();
-    redraw();
+    ///golire_ecran();
+    ///redraw();
+    redraw_page();
 }
 void AsteptareSelectie()
 {
@@ -1163,8 +1256,9 @@ void AsteptareSelectie()
         //desenare_intrari();
         delay(500);
         state=1-state;
-        golire_ecran();
-        redraw();
+        redraw_page();
+        ///golire_ecran();
+        ///redraw();
     }
 }
 void rotire()
@@ -1182,8 +1276,8 @@ void rotire()
 
     //int CULOARE=COLOR(255,255,51);
     incadrare_PiesaModificata(piese[i]);
-    golire_ecran();
-    redraw();
+    ///golire_ecran();
+    ///redraw();
 
 }
 void mutare_piesa ()
@@ -1223,14 +1317,16 @@ void mutare_piesa ()
             else piese[i]=piesaInitiala;
             break;
         }
-        golire_ecran();
-        redraw();
-        delay(REFRESH_RATE);
+        ///golire_ecran();
+        ///redraw();
+        ///delay(REFRESH_RATE);
+        redraw_page();
     }
 
    // piesaActiva=-1;
-    golire_ecran();
-    redraw();
+    ///golire_ecran();
+    ///redraw();
+    redraw_page();
 }
 void plasare_piesa_noua(int Item_Selectat)
 {
@@ -1249,9 +1345,10 @@ void plasare_piesa_noua(int Item_Selectat)
         piese[nrPiese].x=x;
         piese[nrPiese].y=y;
         incadrare(piese[nrPiese],x,y,Item_Selectat);
-        golire_ecran();
-        redraw();
-        delay(REFRESH_RATE);
+        redraw_page();
+        ///golire_ecran();
+        ///redraw();
+        ///delay(REFRESH_RATE);
     }
     int x=mousex();
     int y=mousey();
@@ -1283,8 +1380,9 @@ void erase_all()
                     }
                 }
     nrPiese=-1;
-    golire_ecran();
-    redraw();
+    redraw_page();
+    ///golire_ecran();
+    ///redraw();
 }
 void undo()
 {
@@ -1439,8 +1537,11 @@ void Tool_Cases(int index)
             //redraw();
             break;
         case 1:
+        {
             rotire();
+            redraw_page();
             break;
+        }
         case 2:
             mutare_piesa();
             break;
@@ -1475,7 +1576,7 @@ int main()
     ///drawing the Toolbar and ItemMenu
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
-
+    setbkcolor(FUNDAL);
 
     /// Initializing the main() variables
     int Tool_Selectat = -1;
@@ -1519,9 +1620,11 @@ int main()
             if (index!=-1)
                 citire_modal(piese[index],index);
         }
+        //delay(REFRESH_RATE);
+        //golire_ecran();
+        //redraw();
+        redraw_page();
         delay(REFRESH_RATE);
-        golire_ecran();
-        redraw();
     }
 
     closegraph();
