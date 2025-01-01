@@ -844,8 +844,8 @@ void trasare_legatura()
                     {
                         for(int j=0; j<figuri[piese[i].index].nr_intrari; ++j)
                         {
-                        if(graf[Index_01][i].intrari[Index_intrare_01][j]==1)
-                            {previousPiesa=i; previousIntrare=j;}
+                            if(graf[Index_01][i].intrari[Index_intrare_01][j]==1)
+                                {previousPiesa=i; previousIntrare=j;}
                         }
                     }
                 break;
@@ -886,12 +886,13 @@ void trasare_legatura()
             if (Index_02 != -1 && Index_intrare_02 != -1)
             {
                 cout<<"Nodul al doilea a fost identificat la: Index "<<Index_02<< ", Intrare "<<Index_intrare_02<<endl;
-
+                vector<int>suprascriePiesaPornire;
+                vector<int>suprascriePiesaDestinatie;
                 if(previousIntrare>=0 && previousPiesa>=0)
                 {
                     graf[Index_01][previousPiesa].intrari[Index_intrare_01][previousIntrare]=0;
                     graf[previousPiesa][Index_01].intrari[previousIntrare][Index_intrare_01]=0;
-
+                    suprascriePiesaPornire={Index_01,previousPiesa,Index_intrare_01,previousIntrare};
                     redraw_page();
                     ///cleardevice();
                     ///redraw();
@@ -913,6 +914,7 @@ void trasare_legatura()
                     {
                         graf[Index_02][previousPiesa].intrari[Index_intrare_02][previousIntrare]=0;
                         graf[previousPiesa][Index_02].intrari[previousIntrare][Index_intrare_02]=0;
+                        suprascriePiesaDestinatie={Index_02,previousPiesa,Index_intrare_02,previousIntrare};
                         redraw_page();
                         ///cleardevice();
                         ///redraw();
@@ -922,6 +924,8 @@ void trasare_legatura()
                 graf[Index_01][Index_02].intrari[Index_intrare_01][Index_intrare_02]=1;
                 modificari[q=++p]={vector<int>{4},vector<piesa>{}};
                 legaturi_modificate[p]={{Index_01,Index_02,Index_intrare_01,Index_intrare_02}};
+                if (suprascriePiesaPornire.size()>0) legaturi_modificate[p].push_back(suprascriePiesaPornire);
+                if (suprascriePiesaDestinatie.size()>0) legaturi_modificate[p].push_back(suprascriePiesaDestinatie);
                 break;
             }
             else if(Index_02==-1 && Index_intrare_02==-1) ///I.e daca x si y nu se intersercteaza cu o piesa sau o intrare de pe tabla
@@ -1398,7 +1402,7 @@ void erase_all()
     modificari[q=++p]={{6,nrPiese},{}};
     legaturi_modificate[p].resize(0);
     for (int i=0; i<=nrPiese; ++i)
-        for (int j=0; j<=nrPiese; ++j)
+        for (int j=i+1; j<=nrPiese; ++j)
             for (int e=0; e<MAX_INTRARI; ++e)
                 for (int f=0; f<MAX_INTRARI; ++f)
                 {
@@ -1406,6 +1410,7 @@ void erase_all()
                     {
                         legaturi_modificate[p].push_back({i,j,e,f});
                         graf[i][j].intrari[e][f]=0;
+                        graf[j][i].intrari[f][e]=0;
                     }
                 }
     nrPiese=-1;
@@ -1459,6 +1464,15 @@ void undo()
                 int i2=legaturi_modificate[p][0][3];
                 graf[p1][p2].intrari[i1][i2]=0;
                 graf[p2][p1].intrari[i2][i1]=0;
+                for (int i=1; i<legaturi_modificate[p].size(); ++i)
+                {
+                    p1=legaturi_modificate[p][i][0];
+                    p2=legaturi_modificate[p][i][1];
+                    i1=legaturi_modificate[p][i][2];
+                    i2=legaturi_modificate[p][i][3];
+                    graf[p1][p2].intrari[i1][i2]=1;
+                    graf[p2][p1].intrari[i2][i1]=1;
+                }
                 break;
             }
             case 5: //stergere legatura
@@ -1524,6 +1538,16 @@ void redo()
                 int i2=legaturi_modificate[p][0][3];
                 graf[p1][p2].intrari[i1][i2]=1;
                 graf[p2][p1].intrari[i2][i1]=1;
+
+                for (int i=1; i<legaturi_modificate[p].size(); ++i)
+                {
+                    p1=legaturi_modificate[p][i][0];
+                    p2=legaturi_modificate[p][i][1];
+                    i1=legaturi_modificate[p][i][2];
+                    i2=legaturi_modificate[p][i][3];
+                    graf[p1][p2].intrari[i1][i2]=0;
+                    graf[p2][p1].intrari[i2][i1]=0;
+                }
                 break;
             }
             case 5: //stergere legatura
