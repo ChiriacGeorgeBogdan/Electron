@@ -3,3 +3,7 @@ Electron_01/bin/Debug/ELectron_01.exe
 Electron_01/ELectron_01.depend
 Electron_01/ELectron_01.layout
 Electron_01/obj/Debug/main.o
+*.depend
+*.exe
+*.o
+*.layout

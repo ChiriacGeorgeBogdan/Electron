@@ -1642,8 +1642,8 @@ void slider ()
     setfillstyle(1,LIGHTGRAY);
     //bar(x-lungimeFereastra/2,y-inaltimeFereastra/2,x+lungimeFereastra/2,y+inaltimeFereastra/2);
 
-    char *str02="0,2";
-    char *str7="4,0";
+    char *str02="0,2x";
+    char *str7="4x";
 
     bool isRunning=1;
     y=ySlider;
