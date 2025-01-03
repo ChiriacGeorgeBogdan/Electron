@@ -5,7 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <cstring>
-
+#include <conio.h>
 
 #define FUNDAL 0
 
@@ -19,14 +19,14 @@ const int INALTIME_ECRAN = 950;
 const int INALTIMEA_BAREI_DE_ITEME = 50;   /// inaltimea Item BAR
 ///Barul de tooluri este situat langa marginea stanga a ecranului (x=0) si sub barul de iteme
 const int LATIME_TOOLBAR = 150;
-const int NR_TOOLS=8;
+const int NR_TOOLS=10;
 const int NR_ITEME=13;
-const int REFRESH_RATE=1000.0/10;
+const int REFRESH_RATE=1000.0/20;
 
 const int MAX_PIESE = 100;  /// Nr maxim de piese pe care le putem desena
 const int MAX_INTRARI = 3;
 
-const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Resize","Erase Shape", "Erase All", "Undo", "Redo"};
+const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Resize","Erase Shape", "Erase All", "Undo", "Redo","Save as", "Open file"};
 const char Item_Labels[NR_ITEME][15]= {"Shape 1"};
 
 bool buffer=0;
@@ -205,6 +205,14 @@ void myArc(int orientare, int index, int i, int &a, int &b, int &c, int &d, doub
     c = figuri[index].marire * rx * zoom;
     d = figuri[index].marire * ry * zoom;
 }
+/*
+int culoareElementMeniu (int i)
+{
+    if (i==6 && p==-1) return LIGHTGRAY;
+    if (i==7 && p==q) return LIGHTGRAY;
+    if (i!=6 && i!=7 && nrPiese==-1) return LIGHTGRAY;
+    return DARKGRAY;
+}*/
 /// Deseneaza Bara de Iteme/Piese
 void DeseneazaBaraDeIteme()
 {
@@ -660,7 +668,8 @@ void redraw_page()
 {
     setvisualpage(buffer);
 	setactivepage(1 - buffer);
-	cleardevice();
+	//cleardevice();
+	golire_ecran();
 	redraw();
 	delay(REFRESH_RATE);
 	setvisualpage(1 - buffer);
@@ -981,6 +990,7 @@ void trasare_legatura()
             previous_x=x; previous_y=y;
         }*/
     }
+    redraw_page();
 }
 void modal (piesa &P)
 {
@@ -1189,11 +1199,7 @@ void citire_modal (piesa &P, int indice_piesa)
                     caracteristici_modificate[q].resize(4);
                     for (int i=0; i<4; ++i)
                         caracteristici_modificate[q][i].resize(50);
-                    /*
-                    caracteristici_modificate[q][0].assign(copieNume,copieNume+strlen(copieNume)+1);
-                    caracteristici_modificate[q][1].assign(P.nume,P.nume+strlen(P.nume)+1);
-                    caracteristici_modificate[q][2].assign(copieVal,copieVal+strlen(copieVal)+1);
-                    caracteristici_modificate[q][3].assign(P.valoare,P.valoare+strlen(P.valoare)+1);*/
+
                     copiereCuvant(caracteristici_modificate[q][0],copieNume);
                     copiereCuvant(caracteristici_modificate[q][1],P.nume);
                     copiereCuvant(caracteristici_modificate[q][2],copieVal);
@@ -1202,7 +1208,7 @@ void citire_modal (piesa &P, int indice_piesa)
                 delay(REFRESH_RATE);
                 setvisualpage(1 - buffer);
                 buffer=1-buffer;
-                return;
+                break;
             }
             else if (inchenar(x,y,chenarX) || !inchenar(x,y,chenarModal))
             {
@@ -1212,13 +1218,14 @@ void citire_modal (piesa &P, int indice_piesa)
                 delay(REFRESH_RATE);
                 setvisualpage(1 - buffer);
                 buffer=1-buffer;
-                return;
+                break;
             }
 
         }
         setvisualpage(buffer);
         setactivepage(1 - buffer);
-        cleardevice();
+        //cleardevice();
+        golire_ecran();
         redraw();
         setfillstyle(1,BLACK);
         bar(chenarModal.x1,chenarModal.y1,chenarModal.x2,chenarModal.y2);
@@ -1230,7 +1237,7 @@ void citire_modal (piesa &P, int indice_piesa)
 
     }
 
-
+    redraw_page();
 }
 int cauta_piesa()
 {
@@ -1510,6 +1517,7 @@ void undo()
         }
         p--;
     }
+    redraw_page();
 }
 void redo()
 {
@@ -1585,6 +1593,7 @@ void redo()
                 break;
         }
     }
+    redraw_page();
 }
 /*
 void increase()
@@ -1699,6 +1708,112 @@ void slider ()
     if (piese[i].zoom!=beforeResizing.zoom)
         modificari[q=++p]={{5,i},{beforeResizing,piese[i]}};
 }
+int searchIndexByName (char *name)
+{
+    for (int i=0; i<NR_ITEME; ++i)
+        if (0==strcmp(name,figuri[i].nume))
+            return i;
+    return -1;
+}
+void salvare_circuit()
+{
+    OPENFILENAME ofn;
+    char szFileName[MAX_PATH] = "";
+
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFile = szFileName;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrTitle = "Salveaza circuit...";
+    ofn.Flags = OFN_OVERWRITEPROMPT;
+
+    if (GetSaveFileNameA(&ofn))
+    {
+        ofstream fout(ofn.lpstrFile);
+        if (!fout.is_open()) {
+            cerr << "Error: Nu se poate deschide fisierul " << ofn.lpstrFile << " pentru citire." << '\n';
+            return;
+        }
+
+        fout<<nrPiese<<"\n\n";
+
+        for (int i=0; i<=nrPiese; ++i)
+        {
+            fout<<figuri[piese[i].index].nume<<'\n';
+            fout<<piese[i].nume<<'\n'<<piese[i].valoare<<'\n'<<piese[i].unit<<'\n';
+            fout<<piese[i].x<<" "<<piese[i].y<<'\n';
+            fout<<piese[i].orientare<<" "<<piese[i].zoom<<'\n';
+            fout<<'\n';
+        }
+        fout<<'\n';
+        for (int i=0; i<=nrPiese;++i)
+            for (int j=i+1; j<=nrPiese; ++j)
+                for (int e=0; e<MAX_INTRARI; ++e)
+                    for (int f=0; f<MAX_INTRARI; ++f)
+                        if (graf[i][j].intrari[e][f])
+                            fout<<i<<" "<<j<<" "<<e<<" "<<f<<'\n';
+        fout.close();
+    }
+}
+void import_circuit ()
+{
+    OPENFILENAME ofn;
+    char szFileName[MAX_PATH] = "";
+
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFile = szFileName;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrTitle = "Load Circuit File";
+    ofn.Flags = OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileNameA(&ofn))
+    {
+        ifstream fin(ofn.lpstrFile);
+        if (!fin.is_open()) {
+            cerr << "Error: Nu se poate deschide fisierul " << ofn.lpstrFile << " pentru citire." << '\n';
+            return;
+        }
+        //reinitializare structuri
+        for (int i=0; i<=nrPiese; ++i)
+            for (int j=0; j<=nrPiese; ++j)
+                for (int e=0; e<MAX_INTRARI; ++e)
+                    for (int f=0; f<MAX_INTRARI; ++f)
+                        graf[i][j].intrari[e][f]=0;
+        nrPiese=-1;
+        p=q=-1;
+
+        //citire fisier
+        fin>>nrPiese; fin.get();
+        fin.get();
+        for (int i=0; i<=nrPiese; ++i)
+        {
+            char name[30];
+            fin.getline(name,30);
+            piese[i].index=searchIndexByName(name);
+            fin.getline(piese[i].nume,30);
+            fin.getline(piese[i].valoare,30);
+            fin>>piese[i].unit; fin.get();
+            fin>>piese[i].x>>piese[i].y;
+            fin>>piese[i].orientare>>piese[i].zoom;
+            incadrare_PiesaModificata(piese[i]);
+            calcul_intrari(piese[i]);
+            fin.get();
+            fin.get();
+        }
+        fin.get();
+        int x,y,i,j;
+        while (fin>>x>>y>>i>>j)
+        {
+            graf[x][y].intrari[i][j]=graf[y][x].intrari[j][i]=1;
+        }
+    }
+    redraw_page();
+}
 void Tool_Cases(int index)
 {
     switch (index)
@@ -1735,17 +1850,25 @@ void Tool_Cases(int index)
         case 7:
             redo();
             break;
+        case 8:
+            salvare_circuit();
+            break;
+        case 9:
+            import_circuit();
+            break;
         default:
             return;
     }
 }
+/*
 void hovering_on_menu(int x, int y)
 {
 
     setvisualpage(buffer);
     setactivepage(1 - buffer);
     delay(REFRESH_RATE);
-    cleardevice();
+    golire_ecran();
+    //cleardevice();
     redraw();
     int Tool_Hovered=getToolIndex(x, y);
     int Item_Hovered=getItemIndex(x, y);
@@ -1814,8 +1937,7 @@ void hovering_on_menu(int x, int y)
         setvisualpage(1 - buffer);
         buffer=1-buffer;
     }
-}
-//trb terminata functia pt desenare meniu caracteristici, trb terminata functia de desenare la caracteristicile piesei
+}*/
 int main()
 {
     citire_figuri();
@@ -1826,20 +1948,21 @@ int main()
     setbkcolor(FUNDAL);
 
     /// Initializing the main() variables
+    int Index_Rename = -1;
     int Tool_Selectat = -1;
     int Item_Selectat = -1; // no item has yet been selected
     bool running = true;
 
     while (running)
     {
-        if(!ismouseclick(WM_LBUTTONDOWN) && !ismouseclick(WM_RBUTTONDOWN))
+        /*if(!ismouseclick(WM_LBUTTONDOWN) && !ismouseclick(WM_RBUTTONDOWN))
         {
             int x = mousex();
             int y = mousey();
             if((x<=LATIME_TOOLBAR && y>INALTIMEA_BAREI_DE_ITEME) || (y <= INALTIMEA_BAREI_DE_ITEME))
                     {hovering_on_menu(x, y); continue;}
             //redraw_page();
-        }
+        }*/
         if (ismouseclick(WM_LBUTTONDOWN))
         {
             int x = mousex();
@@ -1851,7 +1974,8 @@ int main()
                 Tool_Selectat=getToolIndex(x, y);
                 cout << "Numarul Uneltei selectate " << Tool_Selectat << endl;
                 Tool_Cases(Tool_Selectat);
-                Tool_Selectat=-1;
+                //Tool_Selectat=-1;
+
             }
             else if (y <= INALTIMEA_BAREI_DE_ITEME)
             {
@@ -1862,7 +1986,8 @@ int main()
 
                 cout << "Numarul itemului selectat " << Item_Selectat << endl;
 
-                Item_Selectat=-1;
+                //Item_Selectat=-1;
+                Tool_Selectat=NR_ITEME+1;
             }
 
         }
@@ -1871,15 +1996,27 @@ int main()
             int x=mousex();
             int y=mousey();
             clearmouseclick(WM_RBUTTONDOWN);
-            int index=index_figura_apasata(x,y);
-            if (index!=-1)
-                citire_modal(piese[index],index);
+            Index_Rename=index_figura_apasata(x,y);
+            if (Index_Rename!=-1)
+                citire_modal(piese[Index_Rename],Index_Rename);
+            Tool_Selectat=NR_ITEME;
+        }
+        if (kbhit())
+        {
+            if (getch()=='r')
+                if (Tool_Selectat==NR_ITEME+1)
+                    plasare_piesa_noua(Item_Selectat);
+                else if (Tool_Selectat==NR_ITEME)
+                    citire_modal(piese[Index_Rename],Index_Rename);
+                else
+                    Tool_Cases(Tool_Selectat);
+
         }
         //delay(REFRESH_RATE);
         //golire_ecran();
         //redraw();
-        redraw_page();
         //delay(REFRESH_RATE);
+        //redraw_page();
     }
 
     closegraph();
