@@ -6,8 +6,12 @@
 #include <vector>
 #include <cstring>
 #include <conio.h>
-
+#include <thread>
+#include <chrono>
+#include <cstdlib>
 #define FUNDAL 0
+#include <windows.h>
+#include <string>
 
 using namespace std;
 void redraw();
@@ -45,7 +49,7 @@ struct figura
     int marire;
 } figuri[50];
 
-const int CULOARE_LEGATURI=GREEN;
+const int CULOARE_LEGATURI=YELLOW;
 int CULOARE_FIGURA=YELLOW;
 
 void citire_figura(int index)
@@ -107,9 +111,9 @@ struct grafuri{
 }graf[MAX_PIESE][MAX_PIESE];
 
 //Stiva modificarilor
-pair<vector<int>, vector<piesa> >modificari[1000];
-vector<vector<int> >legaturi_modificate[1000];
-vector<vector<char> >caracteristici_modificate[1000];
+pair<vector<int>, vector<piesa> >modificari[100];
+vector<vector<int> >legaturi_modificate[100];
+vector<vector<char> >caracteristici_modificate[100];
 int p=-1,q=-1;
 
 
@@ -350,11 +354,30 @@ void golire_ecran ()
     bar(LATIME_TOOLBAR+1,INALTIMEA_BAREI_DE_ITEME+1,LATIME_ECRAN,INALTIME_ECRAN);
 }
 
+const int MAX_PASI_RETINUTI = 5;
+
+/*void limitarea_pasilor_retinuti()
+{
+    if (p >= MAX_PASI_RETINUTI) {
+        for (int i = 1; i <= p; ++i)
+        {
+            modificari[i - 1] = modificari[i];
+            legaturi_modificate[i - 1] = legaturi_modificate[i];
+            caracteristici_modificate[i - 1] = caracteristici_modificate[i];
+        }
+        --p;
+        --q;
+    }
+}
+*/
+
+
 char nume[100];
 int unit=-1;
 int selectionColor=COLOR(255,255,153);
 int unitColor=WHITE;
 int campActiv=-1;
+
 void drawOmega(int x, int y, int radius, int dir)
 {
     setcolor(unitColor);
@@ -648,6 +671,7 @@ void desenare_legaturi()
         }
     }
 }
+int seconds_left_until_restart=30;
 void redraw()
 {
     DeseneazaBaraDeIteme();
@@ -664,17 +688,65 @@ void redraw()
     }
 }
 
-void redraw_page()
+std::string getExecutablePath()
 {
-    setvisualpage(buffer);
-	setactivepage(1 - buffer);
-	//cleardevice();
-	golire_ecran();
-	redraw();
-	delay(REFRESH_RATE);
-	setvisualpage(1 - buffer);
-	buffer=1-buffer;
+    char buffer[MAX_PATH];
+    GetModuleFileName(NULL, buffer, MAX_PATH);
+    return std::string(buffer);
 }
+
+
+double total_redraw_time_seconds = 0.0; // Cumulative time spent in redraw_page
+const double RESTART_THRESHOLD_SECONDS = 60.0;
+
+/*char* getExecutablePath(char* pathBuffer, size_t bufferSize) {
+    GetModuleFileName(NULL, pathBuffer, bufferSize);
+    return pathBuffer;
+}*/
+
+void restart_application_if_needed() {
+
+    if (total_redraw_time_seconds >= RESTART_THRESHOLD_SECONDS-nrPiese) {
+        setactivepage(0);
+        setvisualpage(0);
+        setbkcolor(BLACK);
+        setcolor(WHITE);
+        cleardevice();
+        closegraph();
+        std::string command = getExecutablePath();
+        std::system(command.c_str());
+        std::exit(0);
+        //initwindow(LATIME_ECRAN, INALTIME_ECRAN, "Electron");
+    }
+}
+void reopen_application()
+{
+        setactivepage(0);
+        setvisualpage(0);
+        setbkcolor(BLACK);
+        setcolor(WHITE);
+        cleardevice();
+        closegraph();
+        std::string command = getExecutablePath();
+        std::system(command.c_str());
+        std::exit(0);
+        //initwindow(LATIME_ECRAN, INALTIME_ECRAN, "Electron");
+}
+
+void redraw_page() {
+
+    setactivepage(1 - buffer);
+    golire_ecran();
+    redraw();
+    delay(REFRESH_RATE);
+    setvisualpage(1 - buffer);
+    buffer = 1 - buffer;
+
+    total_redraw_time_seconds += 0.1;
+
+    restart_application_if_needed();
+}
+
 void incadrare_PiesaModificata(piesa& piesaVeche)
 {
     ///re-initializarea colturilor
@@ -1814,6 +1886,94 @@ void import_circuit ()
     }
     redraw_page();
 }
+
+const string AUTOSAVE_FILE = "autosave.txt";
+
+void passive_save()
+{
+    ofstream fout(AUTOSAVE_FILE, std::ios::trunc);
+    if (!fout.is_open()) {
+        cout << "Eroare: Nu s-a putut deschide fisierul de 'autosalvare' ." << endl;
+        return;
+    }
+
+    fout << nrPiese << "\n\n";
+
+    for (int i = 0; i <= nrPiese; ++i) {
+        fout << figuri[piese[i].index].nume << '\n';
+        fout << piese[i].nume << '\n' << piese[i].valoare << '\n' << piese[i].unit << '\n';
+        fout << piese[i].x << " " << piese[i].y << '\n';
+        fout << piese[i].orientare << " " << piese[i].zoom << '\n';
+        fout << '\n';
+    }
+
+    fout << '\n';
+
+    for (int i = 0; i <= nrPiese; ++i) {
+        for (int j = i + 1; j <= nrPiese; ++j) {
+            for (int e = 0; e < MAX_INTRARI; ++e) {
+                for (int f = 0; f < MAX_INTRARI; ++f) {
+                    if (graf[i][j].intrari[e][f]) {
+                        fout << i << " " << j << " " << e << " " << f << '\n';
+                    }
+                }
+            }
+        }
+    }
+
+    fout.close();
+    cout<<"Starea circuitului a fost salvata in: " << AUTOSAVE_FILE<<endl;
+}
+
+void load_passive_save() {
+    ifstream fin(AUTOSAVE_FILE);
+    if (!fin.is_open()) {
+        cout <<"Fisierul de 'auto-salvare' nu a fost gasit " <<endl;
+        return;
+    }
+
+    for (int i = 0; i <= nrPiese; ++i) {
+        for (int j = 0; j <= nrPiese; ++j) {
+            for (int e = 0; e < MAX_INTRARI; ++e) {
+                for (int f = 0; f < MAX_INTRARI; ++f) {
+                    graf[i][j].intrari[e][f] = 0;
+                }
+            }
+        }
+    }
+    nrPiese = -1;
+    p = q = -1;
+    fin >> nrPiese;
+    fin.ignore();
+    fin.ignore();
+
+    for (int i = 0; i <= nrPiese; ++i) {
+        char name[30];
+        fin.getline(name, 30);
+        piese[i].index = searchIndexByName(name);
+        fin.getline(piese[i].nume, 30);
+        fin.getline(piese[i].valoare, 30);
+        fin >> piese[i].unit;
+        fin.ignore();
+        fin >> piese[i].x >> piese[i].y;
+        fin >> piese[i].orientare >> piese[i].zoom;
+        incadrare_PiesaModificata(piese[i]);
+        calcul_intrari(piese[i]);
+        fin.ignore();
+        fin.ignore();
+    }
+    int x, y, i, j;
+    while (fin >> x >> y >> i >> j) {
+        graf[x][y].intrari[i][j] = graf[y][x].intrari[j][i] = 1;
+    }
+
+    fin.close();
+    cout << "starea circuitului a fost incarcata din " << AUTOSAVE_FILE << std::endl;
+
+    redraw_page();
+}
+
+
 void Tool_Cases(int index)
 {
     switch (index)
@@ -1821,6 +1981,7 @@ void Tool_Cases(int index)
         case 0:
             desenare_intrari(WHITE);
             trasare_legatura();
+            passive_save();
             //stergere_intrari();
             //redraw();
             break;
@@ -1828,55 +1989,57 @@ void Tool_Cases(int index)
         {
             rotire();
             redraw_page();
+            passive_save();
             break;
         }
         case 2:
             mutare_piesa();
+            passive_save();
+
             break;
         case 3:
             //redimensionare
             slider();
+            passive_save();
             break;
         case 4:
             AsteptareSelectie();
             stergere_piesa();
+            passive_save();
             break;
         case 5:
             erase_all();
+            passive_save();
             break;
         case 6:
             undo();
+            passive_save();
             break;
         case 7:
             redo();
+            passive_save();
             break;
         case 8:
             salvare_circuit();
+            passive_save();
             break;
         case 9:
             import_circuit();
+            passive_save();
             break;
         default:
             return;
     }
 }
-/*
-void hovering_on_menu(int x, int y)
-{
 
-    setvisualpage(buffer);
-    setactivepage(1 - buffer);
-    delay(REFRESH_RATE);
-    golire_ecran();
-    //cleardevice();
-    redraw();
-    int Tool_Hovered=getToolIndex(x, y);
-    int Item_Hovered=getItemIndex(x, y);
-    if(Item_Hovered!=-1)
+
+void DeseneazaItem(int index)
+{
+    if(index!=-1)
     {
         int Lungimea_Barei_Iteme = LATIME_ECRAN / NR_ITEME;
-        int i=Item_Hovered;
-        setfillstyle(SOLID_FILL, COLOR(32, 32, 32));
+        int i=index;
+        setfillstyle(SOLID_FILL, LIGHTGRAY);
         bar(i * Lungimea_Barei_Iteme, 0, (i + 1) * Lungimea_Barei_Iteme, INALTIMEA_BAREI_DE_ITEME);
 
         setcolor(BLACK);
@@ -1911,58 +2074,268 @@ void hovering_on_menu(int x, int y)
                 arc(new_x + a, new_y + b, 270, 90, c+d+0.5);
             }
         }
-        setvisualpage(1 - buffer);
-        buffer=1-buffer;
     }
-    else if(Tool_Hovered!=-1)
+    else
+        return;
+}
+void DeseneazaTool(int index)
+{
+    if(index!=-1)
     {
 
 
-        int i=Tool_Hovered;
+        int i=index;
         int TOOLS_Inaltime = (INALTIME_ECRAN-INALTIMEA_BAREI_DE_ITEME)/NR_TOOLS;
         setbkcolor(BLACK);
-        setfillstyle(SOLID_FILL, COLOR(32, 32, 32));
+        setfillstyle(SOLID_FILL, DARKGRAY);
         bar(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
 
         setcolor(WHITE);
         rectangle(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
 
-        setbkcolor(COLOR(32, 32, 32));
+        setbkcolor(DARKGRAY);
         settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
-        setcolor(YELLOW);
+        setcolor(BLACK);
         char label[20];
         strcpy(label, Tool_Labels[i]);
         outtextxy(20, 10+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, label);
         setbkcolor(FUNDAL);
-        setvisualpage(1 - buffer);
-        buffer=1-buffer;
+
     }
-}*/
+    else
+        return ;
+}
+int lastHoveredTool = -1;
+int lastHoveredItem = -1;
+void hovering_on_menu(int x, int y) {
+
+    int currentTool = getToolIndex(x, y);
+    int currentItem = getItemIndex(x, y);
+
+    if (currentTool != lastHoveredTool) {
+        if (lastHoveredTool != -1) {
+            DeseneazaTool(lastHoveredTool);
+        }
+
+        if (currentTool != -1) {
+            int i = currentTool;
+            int TOOLS_Inaltime = (INALTIME_ECRAN - INALTIMEA_BAREI_DE_ITEME) / NR_TOOLS;
+            setfillstyle(SOLID_FILL, COLOR(32, 32, 32));
+            bar(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime,
+                LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
+
+            setcolor(WHITE);
+            rectangle(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime,
+                      LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
+
+            setbkcolor(COLOR(32, 32, 32));
+            settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
+            setcolor(YELLOW);
+            char cuvant[50];
+            strcpy(cuvant, Tool_Labels[i]);
+            outtextxy(20, 10 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime, cuvant);
+        }
+
+        lastHoveredTool = currentTool;
+    }
+
+    if (currentItem != lastHoveredItem) {
+        if (lastHoveredItem != -1) {
+            DeseneazaItem(lastHoveredItem);
+        }
+
+        if (currentItem != -1) {
+            int Lungimea_Barei_Iteme = LATIME_ECRAN / NR_ITEME;
+            int i = currentItem;
+            setfillstyle(SOLID_FILL, COLOR(32, 32, 32));
+            bar(i * Lungimea_Barei_Iteme, 0, (i + 1) * Lungimea_Barei_Iteme, INALTIMEA_BAREI_DE_ITEME);
+
+            setcolor(BLACK);
+            rectangle(i * Lungimea_Barei_Iteme, 0, (i + 1) * Lungimea_Barei_Iteme, INALTIMEA_BAREI_DE_ITEME);
+            setcolor(COLOR(255, 255, 51));
+            int new_x = i * Lungimea_Barei_Iteme + Lungimea_Barei_Iteme / 2;
+            int new_y = INALTIMEA_BAREI_DE_ITEME / 2;
+            int index = i;
+
+            for (int j = 0; j < figuri[index].nr_bucati; ++j) {
+                char type = figuri[index].tip_bucata[j];
+                int a = figuri[index].marire * figuri[index].bucati[j][0];
+                int b = figuri[index].marire * figuri[index].bucati[j][1];
+                int c = figuri[index].marire * figuri[index].bucati[j][2];
+                int d = figuri[index].marire * figuri[index].bucati[j][3];
+
+                if (type == 'L') {
+                    line(new_x + a, new_y + b, new_x + c, new_y + d);
+                } else if (type == 'O') {
+                    ellipse(new_x + a, new_y + b, 0, 360, c, d);
+                } else if (type == 'R') {
+                    rectangle(new_x + a, new_y + b, new_x + c, new_y + d);
+                } else if (type == 'A') {
+                    arc(new_x + a, new_y + b, 270, 90, c + d + 0.5);
+                }
+            }
+        }
+        lastHoveredItem = currentItem;
+    }
+}
+void clear_autosave()
+{
+    const string AUTOSAVE_FILE = "autosave.txt";
+    ofstream fout(AUTOSAVE_FILE, ios::trunc);
+    if (!fout.is_open()) {
+        cout << "Erroar: Fisierul 'autosave' nu s-a putut deschide" << endl;
+        return;
+    }
+    fout.close();
+    cout << "Fisierul 'autosave' a fost golit" << endl;
+}
+const char START_MENU_IF_FILE[] = "start_menu_flag.txt";
+
+void create_start_menu();
+void main_application_loop();
+void load_passive_save();
+void import_circuit();
+
+void clear_start_menu_file() {
+    remove(START_MENU_IF_FILE);
+}
+
+bool has_start_menu_been_shown()
+{
+    ifstream menu_IF_file(START_MENU_IF_FILE);
+    return menu_IF_file.is_open();
+}
+
+void mark_start_menu_as_shown() {
+    ofstream menu_IF_file(START_MENU_IF_FILE);
+    if (menu_IF_file.is_open())
+    {
+        menu_IF_file << "orice";
+        menu_IF_file.close();
+    } else {
+        cout << "Eroare la crearea fisierului" << endl;
+    }
+}
+
+void punct_de_pornire_al_alpicatiei() {
+    if (!has_start_menu_been_shown()) {
+        create_start_menu();
+        mark_start_menu_as_shown();
+    }
+    main_application_loop();
+}
+void create_start_menu() {
+
+    cleardevice();
+    setbkcolor(COLOR(30, 30, 30));
+    setfillstyle(SOLID_FILL, COLOR(30, 30, 30));
+    bar(0, 0, getmaxx(), getmaxy());
+
+    /// Titlu: "Electron"
+    settextstyle(BOLD_FONT, HORIZ_DIR, 5);
+    setcolor(COLOR(255, 255, 255));
+    char title[] = "Electron";
+    int title_x = (getmaxx() - textwidth(title)) / 2;
+    int title_y = 50;
+    outtextxy(title_x, title_y, title);
+
+    const int LATIME_BUTON = 380;
+    const int INALTIME_BUTON = 50;
+    const int SPATIU_LIBER_INTRE_BUTOANE = 30;
+
+    char buttons[][20] = { "New Project", "Last Project", "Import Project"};
+    int num_buttons = sizeof(buttons) / sizeof(buttons[0]);
+
+    int start_x = (getmaxx() - LATIME_BUTON) / 2;
+    int start_y = (getmaxy() - (num_buttons * INALTIME_BUTON + (num_buttons - 1) * SPATIU_LIBER_INTRE_BUTOANE)) / 2;
+
+    for (int i = 0; i < num_buttons; ++i)
+    {
+        int x1 = start_x;
+        int y1 = start_y + i * (INALTIME_BUTON + SPATIU_LIBER_INTRE_BUTOANE);
+        int x2 = x1 + LATIME_BUTON;
+        int y2 = y1 + INALTIME_BUTON;
+
+        setfillstyle(SOLID_FILL, COLOR(50, 50, 50));
+        bar(x1, y1, x2, y2);
+        setcolor(COLOR(255, 255, 255));
+        rectangle(x1, y1, x2, y2);
+        setbkcolor(COLOR(50, 50, 50));
+        int text_x = x1 + (LATIME_BUTON - textwidth(buttons[i])) / 2;
+        int text_y = y1 + (INALTIME_BUTON - textheight(buttons[i])) / 2;
+        outtextxy(text_x, text_y, buttons[i]);
+    }
+
+    while (true) {
+        if (ismouseclick(WM_LBUTTONDOWN)) {
+            int x = mousex();
+            int y = mousey();
+            clearmouseclick(WM_LBUTTONDOWN);
+
+            for (int i = 0; i < num_buttons; ++i) {
+                int x1 = start_x;
+                int y1 = start_y + i * (INALTIME_BUTON + SPATIU_LIBER_INTRE_BUTOANE);
+                int x2 = x1 + LATIME_BUTON;
+                int y2 = y1 + INALTIME_BUTON;
+
+                if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
+                    switch (i) {
+                        case 0: /// New Project
+                            clear_autosave();
+                            return;
+                        case 1: /// Last Project
+                            load_passive_save();
+                            return;
+                        case 2: /// Import Project
+                            import_circuit();
+                            return;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void main_application_loop()
+{
+    cleardevice();
+    DeseneazaBaraDeIteme();
+    DeseneazaBaraDeTools();
+    redraw_page();
+}
+
 int main()
 {
     citire_figuri();
     initwindow(LATIME_ECRAN, INALTIME_ECRAN, "Electron");
     ///drawing the Toolbar and ItemMenu
+    punct_de_pornire_al_alpicatiei();
+    load_passive_save();
     DeseneazaBaraDeIteme();
     DeseneazaBaraDeTools();
+    redraw();
     setbkcolor(FUNDAL);
 
     /// Initializing the main() variables
     int Index_Rename = -1;
     int Tool_Selectat = -1;
-    int Item_Selectat = -1; // no item has yet been selected
+    int Item_Selectat = -1;
+    int Tool_Hovered= -1;
+    int Item_Hovered= -1; // no item has yet been selected
     bool running = true;
-
+    bool hover = false;
     while (running)
     {
-        /*if(!ismouseclick(WM_LBUTTONDOWN) && !ismouseclick(WM_RBUTTONDOWN))
+        if(!ismouseclick(WM_LBUTTONDOWN) && !ismouseclick(WM_RBUTTONDOWN))
         {
             int x = mousex();
             int y = mousey();
-            if((x<=LATIME_TOOLBAR && y>INALTIMEA_BAREI_DE_ITEME) || (y <= INALTIMEA_BAREI_DE_ITEME))
-                    {hovering_on_menu(x, y); continue;}
-            //redraw_page();
-        }*/
+            if(((x<=LATIME_TOOLBAR && y>INALTIMEA_BAREI_DE_ITEME) || (y <= INALTIMEA_BAREI_DE_ITEME)))
+                    {hovering_on_menu(x, y); lastHoveredTool=getToolIndex(x, y); lastHoveredItem=getItemIndex(x, y); hover=true; continue;}
+            else if(hover==true)
+                {hover=false; DeseneazaItem(lastHoveredItem); DeseneazaTool(lastHoveredTool); lastHoveredItem=-1; lastHoveredTool=-1;}
+
+        }
         if (ismouseclick(WM_LBUTTONDOWN))
         {
             int x = mousex();
@@ -1983,7 +2356,7 @@ int main()
                 /// Click in intem bar
                 Item_Selectat = getItemIndex(x, y);
                 plasare_piesa_noua(Item_Selectat);
-
+                passive_save();
                 cout << "Numarul itemului selectat " << Item_Selectat << endl;
 
                 //Item_Selectat=-1;
@@ -2000,25 +2373,52 @@ int main()
             if (Index_Rename!=-1)
                 citire_modal(piese[Index_Rename],Index_Rename);
             Tool_Selectat=NR_ITEME;
+            passive_save();
         }
-        if (kbhit())
+        while(kbhit())
         {
-            if (getch()=='r')
-                if (Tool_Selectat==NR_ITEME+1)
-                    plasare_piesa_noua(Item_Selectat);
-                else if (Tool_Selectat==NR_ITEME)
-                    citire_modal(piese[Index_Rename],Index_Rename);
-                else
-                    Tool_Cases(Tool_Selectat);
+            char key = getch();
 
+            switch (key)
+            {
+            case 'r':
+                if (Tool_Selectat == NR_ITEME + 1)
+                {
+                    plasare_piesa_noua(Item_Selectat);
+                    passive_save();
+                }
+                else if (Tool_Selectat == NR_ITEME)
+                {
+                    citire_modal(piese[Index_Rename], Index_Rename);
+                }
+                else
+                {
+                    Tool_Cases(Tool_Selectat);
+                }
+            break;
+
+            case 'g': ///Daca ecranul ingheata
+            reopen_application();
+            break;
+
+            case 27: ///Inchidem ecranul si la urmatorul run al programului se deschide meniul de start
+                cout << "Pressed Escape" << endl;
+                running = false;
+                break;
+
+            case 8: ///Se intoarce la meniul de start
+                cout << "Pressed Backspace" << endl;
+                remove(START_MENU_IF_FILE);
+                reopen_application();
+                break;
+
+            default:
+                break;
         }
-        //delay(REFRESH_RATE);
-        //golire_ecran();
-        //redraw();
-        //delay(REFRESH_RATE);
-        //redraw_page();
     }
 
+    }
+    remove(START_MENU_IF_FILE);
     closegraph();
     return 0;
 }
