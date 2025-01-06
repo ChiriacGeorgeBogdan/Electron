@@ -30,7 +30,7 @@ const int REFRESH_RATE=1000.0/20;
 const int MAX_PIESE = 100;  /// Nr maxim de piese pe care le putem desena
 const int MAX_INTRARI = 3;
 
-const char Tool_Labels[NR_TOOLS][20]= {"Make Connection", "Rotate","Move","Resize","Erase Shape", "Erase All", "Undo", "Redo","Save as", "Open file"};
+const char Tool_Labels[NR_TOOLS][20]= {"Main Menu", "Make Connection", "Rotate","Move","Resize","Erase Shape", "Erase All", "Undo", "Redo","Save as"};
 const char Item_Labels[NR_ITEME][15]= {"Shape 1"};
 
 bool buffer=0;
@@ -1973,59 +1973,66 @@ void load_passive_save() {
     redraw_page();
 }
 
+const char START_MENU_IF_FILE[] = "start_menu_flag.txt";
+
+void create_start_menu();
+void main_application_loop();
+void load_passive_save();
+void import_circuit();
 
 void Tool_Cases(int index)
 {
     switch (index)
     {
-        case 0:
+        case 1:
             desenare_intrari(WHITE);
             trasare_legatura();
             passive_save();
             //stergere_intrari();
             //redraw();
             break;
-        case 1:
+        case 2:
         {
             rotire();
             redraw_page();
             passive_save();
             break;
         }
-        case 2:
+        case 3:
             mutare_piesa();
             passive_save();
 
             break;
-        case 3:
+        case 4:
             //redimensionare
             slider();
             passive_save();
             break;
-        case 4:
+        case 5:
             AsteptareSelectie();
             stergere_piesa();
             passive_save();
             break;
-        case 5:
+        case 6:
             erase_all();
             passive_save();
             break;
-        case 6:
+        case 7:
             undo();
             passive_save();
             break;
-        case 7:
+        case 8:
             redo();
             passive_save();
             break;
-        case 8:
+        case 9:
             salvare_circuit();
             passive_save();
             break;
-        case 9:
-            import_circuit();
+        case 0:
             passive_save();
+            remove(START_MENU_IF_FILE);
+            reopen_application();
             break;
         default:
             return;
@@ -2107,17 +2114,21 @@ void DeseneazaTool(int index)
 }
 int lastHoveredTool = -1;
 int lastHoveredItem = -1;
-void hovering_on_menu(int x, int y) {
+void hovering_on_menu(int x, int y)
+{
 
     int currentTool = getToolIndex(x, y);
     int currentItem = getItemIndex(x, y);
 
-    if (currentTool != lastHoveredTool) {
-        if (lastHoveredTool != -1) {
+    if (currentTool != lastHoveredTool)
+    {
+        if (lastHoveredTool != -1)
+        {
             DeseneazaTool(lastHoveredTool);
         }
 
-        if (currentTool != -1) {
+        if (currentTool != -1)
+        {
             int i = currentTool;
             int TOOLS_Inaltime = (INALTIME_ECRAN - INALTIMEA_BAREI_DE_ITEME) / NR_TOOLS;
             setfillstyle(SOLID_FILL, COLOR(32, 32, 32));
@@ -2139,12 +2150,15 @@ void hovering_on_menu(int x, int y) {
         lastHoveredTool = currentTool;
     }
 
-    if (currentItem != lastHoveredItem) {
-        if (lastHoveredItem != -1) {
+    if (currentItem != lastHoveredItem)
+    {
+        if (lastHoveredItem != -1)
+        {
             DeseneazaItem(lastHoveredItem);
         }
 
-        if (currentItem != -1) {
+        if (currentItem != -1)
+        {
             int Lungimea_Barei_Iteme = LATIME_ECRAN / NR_ITEME;
             int i = currentItem;
             setfillstyle(SOLID_FILL, COLOR(32, 32, 32));
@@ -2182,21 +2196,18 @@ void clear_autosave()
 {
     const string AUTOSAVE_FILE = "autosave.txt";
     ofstream fout(AUTOSAVE_FILE, ios::trunc);
-    if (!fout.is_open()) {
+    if (!fout.is_open())
+    {
         cout << "Erroar: Fisierul 'autosave' nu s-a putut deschide" << endl;
         return;
     }
     fout.close();
     cout << "Fisierul 'autosave' a fost golit" << endl;
 }
-const char START_MENU_IF_FILE[] = "start_menu_flag.txt";
 
-void create_start_menu();
-void main_application_loop();
-void load_passive_save();
-void import_circuit();
 
-void clear_start_menu_file() {
+void clear_start_menu_file()
+{
     remove(START_MENU_IF_FILE);
 }
 
@@ -2206,7 +2217,8 @@ bool has_start_menu_been_shown()
     return menu_IF_file.is_open();
 }
 
-void mark_start_menu_as_shown() {
+void mark_start_menu_as_shown()
+{
     ofstream menu_IF_file(START_MENU_IF_FILE);
     if (menu_IF_file.is_open())
     {
@@ -2231,7 +2243,7 @@ void create_start_menu() {
     setfillstyle(SOLID_FILL, COLOR(30, 30, 30));
     bar(0, 0, getmaxx(), getmaxy());
 
-    /// Titlu: "Electron"
+    /// Title: "Electron"
     settextstyle(BOLD_FONT, HORIZ_DIR, 5);
     setcolor(COLOR(255, 255, 255));
     char title[] = "Electron";
@@ -2243,7 +2255,7 @@ void create_start_menu() {
     const int INALTIME_BUTON = 50;
     const int SPATIU_LIBER_INTRE_BUTOANE = 30;
 
-    char buttons[][20] = { "New Project", "Last Project", "Import Project"};
+    char buttons[][20] = { "New Project", "Last Project", "Import Project", "Exit" };
     int num_buttons = sizeof(buttons) / sizeof(buttons[0]);
 
     int start_x = (getmaxx() - LATIME_BUTON) / 2;
@@ -2266,20 +2278,48 @@ void create_start_menu() {
         outtextxy(text_x, text_y, buttons[i]);
     }
 
-    while (true) {
-        if (ismouseclick(WM_LBUTTONDOWN)) {
+    settextstyle(DEFAULT_FONT, HORIZ_DIR, 2);
+    setcolor(COLOR(200, 200, 200));
+    setbkcolor(COLOR(30, 30, 30));
+    char name1[] = "Cosmin Ciobanu";
+    char name2[] = "Chiriac Bogdan";
+    int name1_x = getmaxx() - textwidth(name1) - 10;
+    int name1_y = getmaxy() - textheight(name1) * 2 - 10;
+    int name2_x = getmaxx() - textwidth(name2) - 10;
+    int name2_y = getmaxy() - textheight(name2) - 5;
+
+    outtextxy(name1_x, name1_y, name1);
+    outtextxy(name2_x, name2_y, name2);
+
+    char text1[] = "Universitatea Alexandru-Ioan Cuza FII";
+    char text2[] = "Proiect realizat sub coordonarea domnului profesor Bogdan Patrut";
+    int text1_x = 10; // Left edge padding
+    int text1_y = getmaxy() - textheight(text2) * 2 - 10; // Bottom padding
+    int text2_x = 10;
+    int text2_y = getmaxy() - textheight(text2) - 5;
+
+    outtextxy(text1_x, text1_y, text1);
+    outtextxy(text2_x, text2_y, text2);
+
+    while (true)
+    {
+        if (ismouseclick(WM_LBUTTONDOWN))
+        {
             int x = mousex();
             int y = mousey();
             clearmouseclick(WM_LBUTTONDOWN);
 
-            for (int i = 0; i < num_buttons; ++i) {
+            for (int i = 0; i < num_buttons; ++i)
+            {
                 int x1 = start_x;
                 int y1 = start_y + i * (INALTIME_BUTON + SPATIU_LIBER_INTRE_BUTOANE);
                 int x2 = x1 + LATIME_BUTON;
                 int y2 = y1 + INALTIME_BUTON;
 
-                if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
-                    switch (i) {
+                if (x >= x1 && x <= x2 && y >= y1 && y <= y2)
+                {
+                    switch (i)
+                    {
                         case 0: /// New Project
                             clear_autosave();
                             return;
@@ -2289,12 +2329,17 @@ void create_start_menu() {
                         case 2: /// Import Project
                             import_circuit();
                             return;
+                        case 3: ///Exit
+                            closegraph();
+                            exit(0);
+                            return;
                     }
                 }
             }
         }
     }
 }
+
 
 void main_application_loop()
 {
