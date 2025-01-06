@@ -2356,7 +2356,9 @@ void create_start_menu() {
                             load_passive_save();
                             return;
                         case 2: /// Import Project
+                            clear_autosave();
                             import_circuit();
+                            passive_save();
                             return;
                         case 3: ///Exit
                             closegraph();
