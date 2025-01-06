@@ -307,25 +307,6 @@ bool sePoateDesena(piesa piesaNoua, int x, int y, int index)
         }
     }
     if (!estePeTabla(piesaNoua.x1,piesaNoua.y1) || !estePeTabla(piesaNoua.x2,piesaNoua.y2)) return false;
-/*
-    for (int i=0; i<figuri[index].nr_bucati; ++i)
-    {
-        char type=figuri[index].tip_bucata[i];
-        int a=figuri[index].marire*figuri[index].bucati[i][0]*piesaNoua.zoom;
-        int b=figuri[index].marire*figuri[index].bucati[i][1]*piesaNoua.zoom;
-        int c=figuri[index].marire*figuri[index].bucati[i][2]*piesaNoua.zoom;
-        int d=figuri[index].marire*figuri[index].bucati[i][3]*piesaNoua.zoom;
-        if (type=='L' || type=='R')
-        {
-            if (!(estePeTabla(x+a,y+b) && estePeTabla(x+c,y+d)))
-                return false;
-        }
-        else if (type=='O' || type=='A')
-        {
-            if (!(estePeTabla(x+a-c,y+b-d) && estePeTabla(x+a+c,y+b-d) && estePeTabla(x+a-c,y+b-d) && estePeTabla(x+a+c,y+b+d)))
-                return false;
-        }
-    }*/
     return true;
 }
 void golire_ecran ()
@@ -511,12 +492,6 @@ void desenare_piesa (piesa P, int CULOARE)
     for (int i=0; i<figuri[index].nr_bucati; ++i)
     {
         char type=figuri[index].tip_bucata[i];
-/*
-        int a=figuri[index].marire*figuri[index].bucati[i][0];
-        int b=figuri[index].marire*figuri[index].bucati[i][1];
-        int c=figuri[index].marire*figuri[index].bucati[i][2];
-        int d=figuri[index].marire*figuri[index].bucati[i][3];
-*/
         int a=0; int b=0; int c=0; int d=0;
         if (type=='L')
         {
