@@ -704,9 +704,12 @@ const double RESTART_THRESHOLD_SECONDS = 60.0;
     return pathBuffer;
 }*/
 
-void restart_application_if_needed() {
+void restart_application_if_needed()
+{
+    int val=max(5, int(RESTART_THRESHOLD_SECONDS)-nrPiese);
 
-    if (total_redraw_time_seconds >= RESTART_THRESHOLD_SECONDS-nrPiese) {
+    if (total_redraw_time_seconds >= val)
+    {
         setactivepage(0);
         setvisualpage(0);
         setbkcolor(BLACK);
@@ -746,7 +749,19 @@ void redraw_page() {
 
     restart_application_if_needed();
 }
-
+void desenare_intrari(int CULOARE);
+void redraw_page_with_intrari()
+{
+    setactivepage(1 - buffer);
+    golire_ecran();
+    redraw();
+    delay(REFRESH_RATE);
+    desenare_intrari(WHITE);
+    setvisualpage(1 - buffer);
+    buffer = 1 - buffer;
+    total_redraw_time_seconds += 0.1;
+    restart_application_if_needed();
+}
 void incadrare_PiesaModificata(piesa& piesaVeche)
 {
     ///re-initializarea colturilor
@@ -831,7 +846,20 @@ void AnimareChenar (int state)
             line(piese[i].x1-gap,y,piese[i].x1-gap,y+5);
     }
 }
+void redraw_page_with_animare_chenar(int state)
+{
+    setactivepage(1 - buffer);
+    delay(REFRESH_RATE);
+    golire_ecran();
+    redraw();
+    AnimareChenar(state);
 
+    setvisualpage(1 - buffer);
+    buffer = 1 - buffer;
+
+    total_redraw_time_seconds += 0.1;
+    restart_application_if_needed();
+}
 const int Raza_Intrare=5;
 const int Imprecizie=15;
 
@@ -947,10 +975,11 @@ void trasare_legatura()
             int y=mousey();
             ///golire_ecran();
             ///redraw();
-            redraw_page();
-            desenare_intrari(WHITE);
+            redraw_page_with_intrari();
+            //redraw_page();
+            //desenare_intrari(WHITE);
             drawLine(piese[Index_01].intrari[Index_intrare_01].x,piese[Index_01].intrari[Index_intrare_01].y,x,y,CULOARE_LEGATURI);
-            ///delay(REFRESH_RATE);
+
         }
         int previous_x=-1, previous_y=-1;
       //  if (ismouseclick(WM_LBUTTONDOWN))
@@ -1369,7 +1398,7 @@ void AsteptareSelectie()
         //desenare_intrari();
         delay(500);
         state=1-state;
-        redraw_page();
+        redraw_page_with_animare_chenar(state);
         ///golire_ecran();
         ///redraw();
     }
