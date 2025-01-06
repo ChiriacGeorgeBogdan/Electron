@@ -688,11 +688,11 @@ void redraw()
     }
 }
 
-std::string getExecutablePath()
+string getExecutablePath()
 {
     char buffer[MAX_PATH];
     GetModuleFileName(NULL, buffer, MAX_PATH);
-    return std::string(buffer);
+    return string(buffer);
 }
 
 
@@ -716,9 +716,9 @@ void restart_application_if_needed()
         setcolor(WHITE);
         cleardevice();
         closegraph();
-        std::string command = getExecutablePath();
-        std::system(command.c_str());
-        std::exit(0);
+        string command = getExecutablePath();
+        system(command.c_str());
+        exit(0);
         //initwindow(LATIME_ECRAN, INALTIME_ECRAN, "Electron");
     }
 }
@@ -1816,6 +1816,70 @@ int searchIndexByName (char *name)
             return i;
     return -1;
 }
+
+void set_project_directory()
+{
+    char exePath[MAX_PATH];
+    if (GetModuleFileNameA(NULL, exePath, MAX_PATH) == 0)
+    {
+        cout<<" eroare la gasirea fisierului .exe "<< endl;
+        return;
+    }
+
+    int length = strlen(exePath);
+    int lastSlash = -1;
+    for (int i = length - 1; i >= 0; --i)
+    {
+        if (exePath[i] == '\\' || exePath[i] == '/')
+        {
+            lastSlash = i;
+            break;
+        }
+    }
+
+    if (lastSlash == -1)
+    {
+        cout << "Eroare: Nu s-a putut determina locatia proiectului" << endl;
+        return;
+    }
+
+    exePath[lastSlash] = '\0';
+
+    int secondLastSlash = -1;
+    for (int i = lastSlash - 1; i >= 0; --i)
+    {
+        if (exePath[i] == '\\' || exePath[i] == '/')
+        {
+            secondLastSlash = i;
+            break;
+        }
+    }
+
+    if (secondLastSlash == -1)
+    {
+        cout << "Eroare: Nu s-a putut determina locatia proiectului" << endl;
+        return;
+    }
+    int thirdLastSlash = -1;
+    for (int i = secondLastSlash - 1; i >= 0; --i)
+    {
+        if (exePath[i] == '\\' || exePath[i] == '/')
+        {
+            thirdLastSlash = i;
+            break;
+        }
+    }
+    exePath[thirdLastSlash] = '\0';
+    if (SetCurrentDirectoryA(exePath) == 0)
+    {
+        cout<< "Eroare la setarea directorului " <<endl;
+        return;
+    }
+
+    cout << "directory-ul a fost setat la: " << exePath <<endl;
+}
+
+
 void salvare_circuit()
 {
     OPENFILENAME ofn;
@@ -1858,6 +1922,8 @@ void salvare_circuit()
         fout.close();
     }
 }
+
+
 void import_circuit ()
 {
     OPENFILENAME ofn;
@@ -2056,6 +2122,7 @@ void Tool_Cases(int index)
             break;
         case 9:
             salvare_circuit();
+            set_project_directory();
             passive_save();
             break;
         case 0:
@@ -2358,6 +2425,7 @@ void create_start_menu() {
                         case 2: /// Import Project
                             clear_autosave();
                             import_circuit();
+                            set_project_directory();
                             passive_save();
                             return;
                         case 3: ///Exit
