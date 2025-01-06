@@ -2387,7 +2387,7 @@ void create_start_menu() {
     outtextxy(name1_x, name1_y, name1);
     outtextxy(name2_x, name2_y, name2);
 
-    char text1[] = "Universitatea Alexandru-Ioan Cuza FII";
+    char text1[] = "Universitatea \"Alexandru Ioan Cuza\", Facultatea de Informatica, Iasi";
     char text2[] = "Proiect realizat sub coordonarea domnului profesor Bogdan Patrut";
     int text1_x = 10; // Left edge padding
     int text1_y = getmaxy() - textheight(text2) * 2 - 10; // Bottom padding

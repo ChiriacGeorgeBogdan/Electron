@@ -1,0 +1,72 @@
+8
+
+Nod
+skibidi
+20
+1
+685 338
+0 1
+
+Amplificator-operational
+Sigma
+420
+0
+385 491
+2 2.55556
+
+Baterie
+george
+44
+1
+932 548
+0 1
+
+STOP
+nimeni
+4
+0
+1105 319
+1 1
+
+Poarta-Si-Nu
+cosmin
+54
+2
+716 830
+0 1
+
+TranzistorNPN
+
+
+-1
+1522 304
+1 0.351111
+
+Dioda-Zenner
+
+
+-1
+1536 264
+0 1
+
+Nod
+
+
+-1
+1162 692
+0 1
+
+Servo-motor
+
+
+-1
+1340 628
+0 1
+
+
+0 1 0 0
+0 2 0 0
+0 4 0 2
+1 4 1 1
+1 4 2 0
+7 8 0 0
