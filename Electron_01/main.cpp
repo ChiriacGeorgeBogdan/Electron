@@ -22,7 +22,7 @@ const int INALTIME_ECRAN = 950;
 ///Item barul este aflat langa marginea de sus a ecranului y=0
 const int INALTIMEA_BAREI_DE_ITEME = 50;   /// inaltimea Item BAR
 ///Barul de tooluri este situat langa marginea stanga a ecranului (x=0) si sub barul de iteme
-const int LATIME_TOOLBAR = 150;
+const int LATIME_TOOLBAR = 160;
 const int NR_TOOLS=10;
 const int NR_ITEME=13;
 const int REFRESH_RATE=1000.0/30;
@@ -263,30 +263,31 @@ void DeseneazaBaraDeIteme()
 /// Deseneaza Bara de Tooluri
 void DeseneazaBaraDeTools()
 {
-    int TOOLS_Inaltime = (INALTIME_ECRAN-INALTIMEA_BAREI_DE_ITEME)/NR_TOOLS;
-    for ( int i=0; i< NR_TOOLS; ++i)
+    int TOOLS_Inaltime = (INALTIME_ECRAN - INALTIMEA_BAREI_DE_ITEME) / NR_TOOLS;
+    for (int i = 0; i < NR_TOOLS; ++i)
     {
         setbkcolor(BLACK);
         setfillstyle(SOLID_FILL, DARKGRAY);
-        bar(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
+        bar(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime, LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
 
         setcolor(WHITE);
-        rectangle(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
+        rectangle(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime, LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
 
-        /// Numirea Toolurilor
-        //Tool_Labels[NR_TOOLS];
         setbkcolor(DARKGRAY);
-        settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
         setcolor(BLACK);
+        settextstyle(SANS_SERIF_FONT, HORIZ_DIR, 2);
         char label[20];
         strcpy(label, Tool_Labels[i]);
-        outtextxy(20, 10+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, label);
+
+        int textWidth = textwidth(label);
+        int textHeight = textheight(label);
+        int textX = (LATIME_TOOLBAR - textWidth) / 2;
+        int textY = 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime + (TOOLS_Inaltime - textHeight) / 2;
+
+        outtextxy(textX, textY, label);
     }
-
-
-    //for(int i=0; i < )
-
 }
+
 bool estePeTabla (int x, int y)
 {
     return y>INALTIMEA_BAREI_DE_ITEME && y<=INALTIME_ECRAN && x>LATIME_TOOLBAR && x<= LATIME_ECRAN;
@@ -2026,31 +2027,33 @@ void DeseneazaItem(int index)
 }
 void DeseneazaTool(int index)
 {
-    if(index!=-1)
+    if (index != -1)
     {
-
-
-        int i=index;
-        int TOOLS_Inaltime = (INALTIME_ECRAN-INALTIMEA_BAREI_DE_ITEME)/NR_TOOLS;
+        int i = index;
+        int TOOLS_Inaltime = (INALTIME_ECRAN - INALTIMEA_BAREI_DE_ITEME) / NR_TOOLS;
         setbkcolor(BLACK);
         setfillstyle(SOLID_FILL, DARKGRAY);
-        bar(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
+        bar(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime, LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
 
         setcolor(WHITE);
-        rectangle(0, 1+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, LATIME_TOOLBAR,  1+INALTIMEA_BAREI_DE_ITEME+(i+1)*TOOLS_Inaltime);
+        rectangle(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime, LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
 
         setbkcolor(DARKGRAY);
-        settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
         setcolor(BLACK);
+        settextstyle(SANS_SERIF_FONT, HORIZ_DIR, 2);
+
         char label[20];
         strcpy(label, Tool_Labels[i]);
-        outtextxy(20, 10+INALTIMEA_BAREI_DE_ITEME+i*TOOLS_Inaltime, label);
-        setbkcolor(FUNDAL);
 
+        int textWidth = textwidth(label);
+        int textHeight = textheight(label);
+        int textX = (LATIME_TOOLBAR - textWidth) / 2;
+        int textY = 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime + (TOOLS_Inaltime - textHeight) / 2;
+
+        outtextxy(textX, textY, label);
     }
-    else
-        return ;
 }
+
 int lastHoveredTool = -1;
 int lastHoveredItem = -1;
 void hovering_on_menu(int x, int y)
@@ -2070,20 +2073,26 @@ void hovering_on_menu(int x, int y)
         {
             int i = currentTool;
             int TOOLS_Inaltime = (INALTIME_ECRAN - INALTIMEA_BAREI_DE_ITEME) / NR_TOOLS;
+            setbkcolor(BLACK);
             setfillstyle(SOLID_FILL, COLOR(32, 32, 32));
-            bar(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime,
-                LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
+            bar(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime, LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
 
             setcolor(WHITE);
-            rectangle(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime,
-                      LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
+            rectangle(0, 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime, LATIME_TOOLBAR, 1 + INALTIMEA_BAREI_DE_ITEME + (i + 1) * TOOLS_Inaltime);
 
             setbkcolor(COLOR(32, 32, 32));
-            settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
             setcolor(YELLOW);
-            char cuvant[50];
-            strcpy(cuvant, Tool_Labels[i]);
-            outtextxy(20, 10 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime, cuvant);
+            settextstyle(SANS_SERIF_FONT, HORIZ_DIR, 2);
+
+            char label[20];
+            strcpy(label, Tool_Labels[i]);
+
+            int textWidth = textwidth(label);
+            int textHeight = textheight(label);
+            int textX = (LATIME_TOOLBAR - textWidth) / 2;
+            int textY = 1 + INALTIMEA_BAREI_DE_ITEME + i * TOOLS_Inaltime + (TOOLS_Inaltime - textHeight) / 2;
+
+            outtextxy(textX, textY, label);
         }
 
         lastHoveredTool = currentTool;
